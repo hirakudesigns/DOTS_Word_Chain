@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドット絵お絵描きしりとり</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for Retro Arcade Vibe -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <!-- Tone.js for retro audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti for Game Clear -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'DotGothic16', sans-serif;
+            background-color: #475569;
+            background-image: radial-gradient(#64748b 1px, transparent 1px);
+            background-size: 16px 16px;
+            color: #1e293b;
+            user-select: none;
+        }
+
+        .pixel-box {
+            border: 4px solid #1e293b;
+            box-shadow: 4px 4px 0px #334155;
+            background-color: #ffffff;
+        }
+
+        .pixel-box-interactive {
+            border: 3px solid #1e293b;
+            box-shadow: 3px 3px 0px #475569;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .pixel-box-interactive:hover {
+            transform: translateY(-2px);
+            box-shadow: 5px 5px 0px #334155;
+        }
+
+        .pixel-box-interactive:active {
+            transform: translateY(2px);
+            box-shadow: 1px 1px 0px #334155;
+        }
+
+        .pixel-btn-primary {
+            background-color: #ff4757;
+            border: 4px solid #1e293b;
+            color: white;
+            box-shadow: 0 5px 0 #c0392b, 0 8px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .pixel-btn-primary:active {
+            box-shadow: 0 0 0 #c0392b;
+            transform: translateY(5px);
+        }
+
+        .btn-start-action {
+            position: relative;
+            overflow: hidden;
+            animation: pulse-bounce 2s infinite ease-in-out;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-start-action:hover {
+            transform: scale(1.06) translateY(-3px);
+            box-shadow: 0 8px 0 #c0392b, 0 12px 25px rgba(255, 71, 87, 0.6);
+            animation-play-state: paused;
+        }
+
+        .btn-start-action:active {
+            transform: scale(0.98) translateY(4px);
+            box-shadow: 0 1px 0 #c0392b;
+        }
+
+        .btn-start-action::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 40%;
+            height: 200%;
+            background: linear-gradient(
+                to right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.5) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(25deg);
+            animation: shimmer-pass 3s infinite;
+        }
+
+        @keyframes pulse-bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+
+        @keyframes shimmer-pass {
+            0% { left: -60%; }
+            20% { left: 140%; }
+            100% { left: 140%; }
+        }
+
+        .pixel-btn-success {
+            background-color: #2ed573;
+            border: 3px solid #1e293b;
+            color: #ffffff;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #20bf6b;
+        }
+
+        .pixel-btn-success:active {
+            box-shadow: 0 0 0 #20bf6b;
+            transform: translateY(4px);
+        }
+
+        .pixel-btn-gold {
+            background-color: #ffa502;
+            border: 3px solid #1e293b;
+            color: #ffffff;
+            font-weight: bold;
+            box-shadow: 0 4px 0 #e67e22;
+        }
+
+        .pixel-btn-gold:active {
+            box-shadow: 0 0 0 #e67e22;
+            transform: translateY(4px);
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .active-player-glow {
+            border-color: #ff4757 !important;
+            box-shadow: 0 0 0 3px #ffa502, 0 0 8px rgba(255, 165, 2, 0.6);
+            animation: pulse-glow 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 3px #ffa502, 0 0 4px rgba(255, 165, 2, 0.4); }
+            100% { box-shadow: 0 0 0 4px #ff4757, 0 0 12px rgba(255, 71, 87, 0.8); }
+        }
+
+        .video-container {
+            aspect-ratio: 16 / 9;
+            max-height: 98vh;
+            max-width: 174vh;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .card-pop-in {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .arcade-title-text {
+            color: #ff3838;
+            text-shadow: 
+                2px 2px 0px #ffdd59,
+                -1.5px -1.5px 0px #ffffff,
+                1.5px -1.5px 0px #ffffff,
+                -1.5px 1.5px 0px #ffffff,
+                3.5px 3.5px 0px #1e272e;
+            letter-spacing: 0.05em;
+        }
+
+        .arcade-subtitle-badge {
+            background: linear-gradient(135deg, #fff200 0%, #fffa65 100%);
+            border: 3px solid #1e272e;
+            box-shadow: 3px 3px 0px #000000;
+        }
+    </style>
+</head>
+<body class="h-screen bg-slate-700 flex items-center justify-center p-2 overflow-hidden">
+
+    <!-- MAIN 16:9 CONTAINER FOR VIDEO RECORDING -->
+    <div class="video-container pixel-box p-3 flex flex-col justify-between overflow-hidden relative bg-slate-100 rounded-xl">
+        
+        <!-- HEADER BAR -->
+        <header class="flex items-center justify-between pb-2 border-b-2 border-slate-300 gap-2 shrink-0">
+            <!-- App Title & Quick Reset -->
+            <div class="flex items-center gap-2">
+                <span class="text-base font-black text-pink-500 tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-paintbrush"></i> DOTS ドット絵しりとり
+                </span>
+                <button onclick="toggleSound()" class="pixel-box-interactive px-2 py-0.5 bg-slate-200 text-slate-700 text-xs rounded font-bold" title="効果音 ON/OFF">
+                    <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+                <button onclick="confirmReset()" class="pixel-box-interactive px-2 py-0.5 bg-amber-200 text-amber-800 text-xs rounded font-bold" title="設定に戻る">
+                    <i class="fa-solid fa-rotate-left"></i> リセット
+                </button>
+            </div>
+
+            <!-- Active Players Row -->
+            <div id="players-header-container" class="flex items-center gap-1.5 overflow-x-auto py-0.5 px-1 max-w-[45%]">
+                <!-- JS Inserted Active Players -->
+            </div>
+
+            <!-- Turn Status & Finish Button -->
+            <div class="flex items-center gap-2">
+                <div class="text-right">
+                    <div id="round-display" class="text-[10px] font-bold text-slate-500">1周目</div>
+                    <div id="turn-display" class="text-xs font-black text-pink-600">(1 / 16)</div>
+                </div>
+                <button onclick="finishGameEarly()" class="pixel-box-interactive px-2.5 py-1 bg-red-500 text-white text-xs font-bold rounded shadow-sm flex items-center gap-1">
+                    <i class="fa-solid fa-flag-checkered"></i> 終了
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT (3-COLUMN GRID) -->
+        <main class="grid grid-cols-12 gap-3 flex-1 min-h-0 py-2">
+
+            <!-- LEFT COLUMN (3/12): Drawing Tools & Controls -->
+            <section class="col-span-3 pixel-box p-2.5 flex flex-col justify-between bg-slate-50 rounded-lg">
+                <div class="space-y-2">
+                    <h2 class="text-xs font-bold text-slate-700 pb-1 border-b border-slate-200 flex items-center gap-1">
+                        <i class="fa-solid fa-palette text-pink-500"></i> ツールの選択
+                    </h2>
+
+                    <!-- Tool Buttons -->
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <button id="tool-pen" onclick="setTool('pen')" class="tool-btn pixel-box-interactive p-2 bg-sky-400 text-white rounded text-xs flex items-center justify-center gap-1 font-bold">
+                            <i class="fa-solid fa-pencil"></i> ペン
+                        </button>
+                        <button id="tool-bucket" onclick="setTool('bucket')" class="tool-btn pixel-box-interactive p-2 bg-slate-100 text-slate-700 rounded text-xs flex items-center justify-center gap-1 font-bold">
+                            <i class="fa-solid fa-fill-drip text-sky-500"></i> バケツ
+                        </button>
+                        <button id="tool-eraser" onclick="setTool('eraser')" class="tool-btn pixel-box-interactive p-2 bg-slate-100 text-slate-700 rounded text-xs flex items-center justify-center gap-1 font-bold">
+                            <i class="fa-solid fa-eraser text-pink-500"></i> 消しゴム
+                        </button>
+                        <button onclick="toggleGrid()" class="pixel-box-interactive p-2 bg-slate-100 text-slate-700 rounded text-xs flex items-center justify-center gap-1 font-bold">
+                            <i class="fa-solid fa-border-all text-amber-500"></i> グリッド
+                        </button>
+                    </div>
+
+                    <!-- Canvas History Actions -->
+                    <div class="flex items-center gap-1.5 pt-0.5">
+                        <button onclick="undo()" class="flex-1 pixel-box-interactive py-1 bg-slate-100 text-slate-700 rounded text-xs flex items-center justify-center gap-1 font-bold">
+                            <i class="fa-solid fa-rotate-left"></i> 戻る
+                        </button>
+                        <button onclick="redo()" class="flex-1 pixel-box-interactive py-1 bg-slate-100 text-slate-700 rounded text-xs flex items-center justify-center gap-1 font-bold">
+                            <i class="fa-solid fa-rotate-right"></i> 進む
+                        </button>
+                        <button onclick="clearCanvasPrompt()" class="pixel-box-interactive px-2 py-1 bg-red-100 text-red-600 rounded text-xs font-bold" title="全消去">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+
+                    <!-- Color Picker & Palette -->
+                    <div class="border-t-2 border-slate-200 pt-1.5">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-slate-600 font-bold">パレット:</span>
+                            <input type="color" id="color-picker" value="#000000" onchange="setColor(this.value)" class="w-6 h-6 rounded cursor-pointer border-2 border-slate-400 bg-transparent">
+                        </div>
+                        <div id="palette-container" class="grid grid-cols-5 gap-1"></div>
+                    </div>
+                </div>
+
+                <!-- Pass Turn Action Button -->
+                <div class="border-t-2 border-slate-200 pt-2 space-y-1.5">
+                    <div class="text-[11px] text-slate-500 font-bold text-center bg-amber-50 py-1 rounded border border-amber-200">
+                        文字入力は不要！絵だけで交代しよう！
+                    </div>
+                    <button onclick="submitTurn()" class="pixel-btn-success w-full py-3 rounded-lg text-sm font-black flex items-center justify-center gap-1.5 tracking-wider">
+                        <i class="fa-solid fa-paper-plane text-base"></i> この絵で交代！
+                    </button>
+                </div>
+            </section>
+
+            <!-- CENTER COLUMN (5/12): 32x32 Canvas & Timer -->
+            <section class="col-span-5 pixel-box p-2 flex flex-col items-center justify-between relative bg-amber-100/40 rounded-lg">
+                <div class="w-full bg-white border-2 border-slate-700 rounded-lg p-1.5 px-3 flex items-center justify-between shadow-sm mb-1">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-stopwatch text-amber-500 text-base"></i>
+                        <span class="text-xs font-black text-slate-700">のこり時間</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-24 sm:w-32 bg-slate-200 h-3 rounded-full overflow-hidden border border-slate-400">
+                            <div id="timer-bar" class="bg-emerald-400 h-full transition-all duration-1000" style="width: 100%;"></div>
+                        </div>
+                        <span id="timer-display" class="text-base font-black text-slate-800 w-12 text-right">90秒</span>
+                    </div>
+                </div>
+
+                <!-- 最初のターン（1ターン目）のみ表示するスタート文字ヒント -->
+                <div id="first-turn-hint" class="w-full bg-pink-100 border-2 border-pink-400 rounded-lg py-1 px-3 flex items-center justify-center gap-2 mb-1 shadow-sm hidden">
+                    <span class="text-xs font-black text-pink-700 flex items-center gap-1">
+                        <i class="fa-solid fa-star text-amber-500"></i> 最初の文字
+                    </span>
+                    <span id="hint-start-char-display" class="text-base font-black text-pink-600 bg-white px-3 py-0.5 rounded-md border border-pink-300 shadow-inner">「あ」</span>
+                </div>
+
+                <div class="relative border-4 border-slate-700 shadow-lg bg-white rounded flex items-center justify-center overflow-hidden my-auto">
+                    <canvas id="pixel-canvas" width="512" height="512" class="cursor-crosshair block max-h-[60vh] max-w-[60vh] aspect-square"></canvas>
+                    <canvas id="grid-canvas" width="512" height="512" class="pointer-events-none absolute top-0 left-0 max-h-[60vh] max-w-[60vh] aspect-square"></canvas>
+                </div>
+            </section>
+
+            <!-- RIGHT COLUMN (4/12): Shiritori Cards History Feed -->
+            <section class="col-span-4 pixel-box p-2.5 flex flex-col h-full min-h-0 bg-white rounded-lg">
+                <div class="flex items-center justify-between pb-1.5 border-b-2 border-slate-200 mb-2 shrink-0">
+                    <h2 class="text-xs font-bold text-slate-700 flex items-center gap-1">
+                        <i class="fa-solid fa-cubes text-amber-500"></i> カード履歴
+                    </h2>
+                    <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold">文字ネタバレなし</span>
+                </div>
+
+                <div id="cards-history-list" class="flex-1 overflow-y-auto grid grid-cols-2 gap-2 content-start pr-1">
+                    <div id="empty-history-msg" class="col-span-2 text-center py-12 text-slate-400 text-xs">
+                        <i class="fa-solid fa-paintbrush text-2xl mb-2 opacity-40"></i><br>
+                        最初のドット絵を描いて<br>「この絵で交代！」を押してください
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Toast Notification Box -->
+        <div id="toast-msg" class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-xl border border-slate-700 hidden z-30 transition-all">
+            <span id="toast-text">メッセージ</span>
+        </div>
+    </div>
+
+    <!-- GAME FINISH OVERLAY -->
+    <div id="finish-overlay" class="fixed inset-0 bg-slate-900/85 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="pixel-box p-8 max-w-md w-full bg-white rounded-2xl text-center shadow-2xl card-pop-in flex flex-col items-center border-4 border-pink-500">
+            <i class="fa-solid fa-flag-checkered text-5xl text-amber-500 mb-3 animate-bounce"></i>
+            <h2 class="arcade-title-text text-4xl sm:text-5xl font-black tracking-widest my-2 drop-shadow-md">
+                ゲーム終了！
+            </h2>
+            <div class="mt-3 px-4 py-1.5 bg-amber-100 rounded-full border border-amber-300">
+                <p class="text-xs font-black text-amber-900 animate-pulse">
+                    答え合わせ＆審判フェーズへ移動します
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FULLSCREEN TITLE SCREEN -->
+    <div id="title-modal" class="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-hidden bg-gradient-to-br from-sky-300 via-emerald-100 to-amber-100">
+        <div class="w-full max-w-4xl h-full max-h-[90vh] flex flex-col items-center justify-between py-6 px-4 text-center relative z-10">
+            <div></div>
+
+            <div class="my-auto space-y-5 w-full flex flex-col items-center">
+                <div class="px-6 py-4 max-w-2xl w-full flex flex-col items-center justify-center">
+                    <div id="title-logo-wrapper" class="flex items-center justify-center">
+                        <h1 class="arcade-title-text text-3xl sm:text-5xl font-black leading-tight my-1">
+                            ドットで<br>お絵かきしりとり
+                        </h1>
+                    </div>
+
+                    <div class="mt-4 inline-block arcade-subtitle-badge px-5 py-1.5 rounded-xl text-slate-900 font-black text-xs sm:text-sm tracking-wide">
+                        描いたドット絵をつないで、みんなで高得点を目指そう！
+                    </div>
+                </div>
+
+                <button onclick="goToSetupFromTitle()" class="pixel-btn-primary btn-start-action px-10 py-4 rounded-2xl text-xl sm:text-2xl font-black tracking-widest cursor-pointer flex items-center justify-center gap-3">
+                    <i class="fa-solid fa-play text-amber-300 text-2xl"></i> ゲームをはじめる
+                </button>
+            </div>
+
+            <footer class="text-xs text-slate-600 font-bold tracking-widest pt-2 opacity-80">
+                &copy; 2026 hiraku-designs DOTS PROJECTS all rights reserved.
+            </footer>
+        </div>
+    </div>
+
+    <!-- MODAL 1: GAME SETUP -->
+    <div id="setup-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="pixel-box p-6 max-w-lg w-full bg-white rounded-xl text-slate-800 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <h2 class="text-2xl font-black text-pink-500 text-center mb-1 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-gear text-amber-400"></i> ゲーム設定
+            </h2>
+            <p class="text-center text-xs text-slate-500 mb-5 font-bold">描いたドット絵をつないで、みんなで高得点を目指そう！</p>
+
+            <!-- 1. Number of Players -->
+            <div class="mb-4">
+                <label class="block text-xs font-black text-slate-700 mb-1.5">1. プレイ人数 (最大4人)</label>
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setPlayerCount(1)" class="player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-slate-700 bg-white" data-count="1">1人</button>
+                    <button onclick="setPlayerCount(2)" class="player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-slate-700 bg-white" data-count="2">2人</button>
+                    <button onclick="setPlayerCount(3)" class="player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-slate-700 bg-white" data-count="3">3人</button>
+                    <button onclick="setPlayerCount(4)" class="player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-white bg-pink-500 border-slate-700" data-count="4">4人</button>
+                </div>
+            </div>
+
+            <!-- 2. Rounds Count Selection -->
+            <div class="mb-4">
+                <label class="block text-xs font-black text-slate-700 mb-1.5">2. プレイ周数 (全員が何回描くか)</label>
+                <div class="grid grid-cols-5 gap-1.5">
+                    <button onclick="setRoundsCount(1)" class="rounds-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white" data-rounds="1">1周</button>
+                    <button onclick="setRoundsCount(2)" class="rounds-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white" data-rounds="2">2周</button>
+                    <button onclick="setRoundsCount(3)" class="rounds-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white" data-rounds="3">3周</button>
+                    <button onclick="setRoundsCount(4)" class="rounds-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-white bg-pink-500 border-slate-700" data-rounds="4">4周</button>
+                    <button onclick="setRoundsCount(5)" class="rounds-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white" data-rounds="5">5周</button>
+                </div>
+                <div id="rounds-summary-text" class="text-[11px] text-pink-600 font-bold text-center mt-1 bg-pink-50 py-0.5 rounded border border-pink-200">
+                    1人4回ずつ（全16ターン）
+                </div>
+            </div>
+
+            <!-- 3. Time Limit -->
+            <div class="mb-4">
+                <label class="block text-xs font-black text-slate-700 mb-1.5">3. 1ターンの制限時間</label>
+                <div class="grid grid-cols-5 gap-1.5">
+                    <button onclick="setTimeLimit(30)" class="time-limit-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white" data-time="30">30秒</button>
+                    <button onclick="setTimeLimit(60)" class="time-limit-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white" data-time="60">60秒</button>
+                    <button onclick="setTimeLimit(90)" class="time-limit-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-white bg-pink-500 border-slate-700" data-time="90">90秒</button>
+                    <button onclick="setTimeLimit(120)" class="time-limit-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white" data-time="120">120秒</button>
+                    <button onclick="setTimeLimit(150)" class="time-limit-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white" data-time="150">150秒</button>
+                </div>
+            </div>
+
+            <!-- 4. Player Names & Avatars -->
+            <div class="mb-5">
+                <label class="block text-xs font-black text-slate-700 mb-2">4. プレイヤー名と顔アイコン</label>
+                <div id="player-setup-list" class="space-y-2"></div>
+            </div>
+
+            <button onclick="startOrderShufflePhase()" class="pixel-btn-primary w-full py-3 rounded-lg text-base font-black tracking-widest flex items-center justify-center gap-2">
+                <i class="fa-solid fa-shuffle"></i> 順番を決めてスタート！
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL: AVATAR DRAWING MODAL -->
+    <div id="avatar-draw-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="pixel-box p-5 max-w-md w-full bg-white rounded-2xl text-slate-800 flex flex-col items-center gap-3 shadow-2xl">
+            <h3 class="text-base font-black text-pink-500 flex items-center gap-1.5">
+                <i class="fa-solid fa-paintbrush text-amber-400"></i> 顔アイコンをドット絵で描く
+            </h3>
+            <p class="text-[11px] font-bold text-slate-500">32x32のキャンバスに練習を兼ねて顔を描いてみよう！</p>
+
+            <!-- Tools & Color -->
+            <div class="flex items-center gap-2 w-full justify-between bg-slate-100 p-2 rounded-lg text-xs font-bold border border-slate-200">
+                <div class="flex gap-1">
+                    <button onclick="setAvatarTool('pen')" id="avatar-tool-pen" class="px-2.5 py-1 bg-sky-400 text-white rounded font-bold">
+                        <i class="fa-solid fa-pencil"></i> ペン
+                    </button>
+                    <button onclick="setAvatarTool('eraser')" id="avatar-tool-eraser" class="px-2.5 py-1 bg-slate-200 text-slate-700 rounded font-bold">
+                        <i class="fa-solid fa-eraser text-pink-500"></i> 消す
+                    </button>
+                    <button onclick="clearAvatarCanvas()" class="px-2 py-1 bg-red-100 text-red-600 rounded font-bold" title="全消去">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                <div class="flex items-center gap-1">
+                    <span class="text-slate-600">色:</span>
+                    <input type="color" id="avatar-color-picker" value="#000000" onchange="setAvatarColor(this.value)" class="w-6 h-6 rounded cursor-pointer border-2 border-slate-400">
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div class="relative border-4 border-slate-700 shadow-md bg-white rounded overflow-hidden">
+                <canvas id="avatar-canvas" width="256" height="256" class="cursor-crosshair block w-64 h-64 aspect-square"></canvas>
+                <canvas id="avatar-grid-canvas" width="256" height="256" class="pointer-events-none absolute top-0 left-0 w-64 h-64 aspect-square"></canvas>
+            </div>
+
+            <div class="flex items-center gap-2 w-full pt-1">
+                <button onclick="closeAvatarDrawModal(false)" class="pixel-box-interactive flex-1 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">キャンセル</button>
+                <button onclick="closeAvatarDrawModal(true)" class="pixel-btn-success flex-1 py-2 text-xs font-bold rounded-lg flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-check"></i> この顔に決定！
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CUSTOM GAME CONFIRM DIALOG -->
+    <div id="custom-confirm-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="pixel-box p-6 max-w-sm w-full bg-white rounded-2xl text-center shadow-2xl card-pop-in space-y-4 border-4 border-amber-400">
+            <h3 id="confirm-title" class="text-lg font-black text-slate-800 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-circle-question text-amber-500"></i> 確認
+            </h3>
+            <p id="confirm-message" class="text-xs font-bold text-slate-600 leading-relaxed"></p>
+            <div class="flex items-center gap-2 pt-2">
+                <button onclick="closeCustomConfirm(false)" class="pixel-box-interactive flex-1 py-2 bg-slate-200 text-slate-700 text-xs font-bold rounded-lg">キャンセル</button>
+                <button onclick="closeCustomConfirm(true)" class="pixel-btn-primary flex-1 py-2 text-xs font-bold rounded-lg">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 1.5: ORDER SHUFFLE PHASE -->
+    <div id="shuffle-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="pixel-box p-6 max-w-2xl w-full bg-white rounded-xl text-slate-800 text-center space-y-4 shadow-2xl">
+            <h3 class="text-xl font-black text-pink-500 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-dice text-amber-500"></i> プレイ順番＆最初の文字決定
+            </h3>
+            
+            <p id="shuffle-status-text" class="text-sm font-bold text-slate-600">シャッフル中...</p>
+
+            <div id="shuffled-order-list" class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-amber-50 p-3 rounded-lg border-2 border-amber-300 min-h-[110px] items-center"></div>
+
+            <div id="start-char-box" class="hidden bg-pink-100 border-2 border-pink-400 p-3 rounded-xl card-pop-in">
+                <span class="text-xs font-black text-pink-700 block mb-1">CPUが選んだ最初の文字</span>
+                <span id="start-char-display" class="text-5xl font-black text-pink-600 tracking-widest bg-white px-6 py-2 rounded-xl border-3 border-pink-300 inline-block shadow-md">「あ」</span>
+            </div>
+
+            <button id="start-shuffled-game-btn" onclick="startGameWithShuffledOrder()" class="pixel-btn-success w-full py-3 rounded-lg text-base font-black hidden">
+                <i class="fa-solid fa-play mr-1"></i> この条件でスタート！
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 2: ANSWER REVEAL & JUDGMENT PHASE -->
+    <div id="judgment-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="pixel-box p-5 max-w-xl w-full bg-white rounded-2xl text-slate-800 text-center flex flex-col justify-between shadow-2xl relative overflow-hidden">
+            <div class="flex items-center justify-between border-b-2 border-slate-200 pb-2 mb-2">
+                <span id="judge-turn-badge" class="bg-red-500 text-white font-black text-xs px-2.5 py-1 rounded-full">TURN 1 / 20</span>
+                <h3 class="text-base font-black text-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-bullhorn text-pink-500"></i> 答え合わせ＆審判
+                </h3>
+                <span class="text-xs font-bold text-amber-600">合計: <span id="judge-score-sum" class="text-base font-black text-pink-600">0</span> pt</span>
+            </div>
+
+            <div class="my-1 space-y-2">
+                <div class="flex items-center justify-center gap-2">
+                    <img id="judge-player-avatar" src="" class="w-8 h-8 rounded-lg border-2 border-slate-700 object-cover bg-white">
+                    <span id="judge-player-name" class="text-base font-black text-slate-800">プレイヤー1</span>
+                    <span class="text-xs font-bold text-slate-500">さんの作品</span>
+                </div>
+
+                <div class="w-56 h-56 mx-auto bg-amber-50 border-4 border-slate-700 rounded-xl p-2 flex items-center justify-center shadow-inner">
+                    <img id="judge-card-image" src="" class="w-full h-full object-contain pixelated rounded">
+                </div>
+
+                <div class="p-2 bg-amber-100/70 border-2 border-amber-300 rounded-lg">
+                    <p class="text-xs font-black text-amber-900 mb-0.5">描いた本人が口頭で発表してね</p>
+                    <p class="text-sm font-black text-pink-600">「これは〇〇です！」</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 pt-2">
+                <button onclick="judgeCard('success')" class="pixel-btn-success py-2.5 rounded-xl text-xs font-black flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform">
+                    <span class="text-sm"><i class="fa-solid fa-circle-check"></i> 成立</span>
+                    <span>(+50pt)</span>
+                </button>
+                <button onclick="judgeCard('bonus')" class="pixel-btn-gold py-2.5 rounded-xl text-xs font-black flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform">
+                    <span class="text-sm"><i class="fa-solid fa-award"></i> お見事！</span>
+                    <span>(+100pt)</span>
+                </button>
+                <button onclick="judgeCard('failed')" class="pixel-btn-primary py-2.5 rounded-xl text-xs font-black flex flex-col items-center justify-center gap-0.5 hover:scale-105 transition-transform">
+                    <span class="text-sm"><i class="fa-solid fa-circle-xmark"></i> 撃沈...</span>
+                    <span>(0pt)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: FINAL RESULT & MVP AWARD -->
+    <div id="clear-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="pixel-box p-6 max-w-3xl w-full bg-white rounded-xl text-slate-800 text-center flex flex-col max-h-[92vh] shadow-2xl">
+            <div class="py-1">
+                <h2 class="text-2xl font-black text-amber-500 mb-1 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i> 最終スコア発表
+                </h2>
+                
+                <div class="bg-amber-100 border-2 border-amber-400 rounded-xl p-2.5 my-1.5 space-y-0.5">
+                    <div class="text-xs font-bold text-amber-800">チーム獲得称号</div>
+                    <div id="final-title-display" class="text-xl font-black text-pink-600 tracking-wider">「伝説のドット絵マスター」</div>
+                    <div class="flex justify-center items-center gap-4 text-xs font-black text-slate-700 pt-0.5">
+                        <span>成立率: <span id="final-rate-display" class="text-emerald-600 text-sm">100%</span></span>
+                        <span>チーム合計: <span id="final-score-display" class="text-pink-600 text-sm">2000</span> pt</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="my-1.5 p-2 bg-slate-50 border-2 border-slate-200 rounded-lg">
+                <h3 class="text-xs font-black text-slate-700 mb-1.5 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-crown text-amber-500"></i> 個人貢献度ランキング
+                </h3>
+                <div id="player-ranking-list" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+            </div>
+
+            <div id="final-gallery" class="flex-1 my-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 bg-amber-50/60 rounded-lg border-2 border-amber-200"></div>
+
+            <div class="flex flex-col sm:flex-row gap-2 mt-2">
+                <button onclick="restartGameSameSettings()" class="pixel-btn-success flex-1 py-2 rounded-lg text-sm font-bold">
+                    <i class="fa-solid fa-rotate-right mr-1"></i> もう一度遊ぶ
+                </button>
+                <button onclick="openSetupModal()" class="pixel-box-interactive flex-1 py-2 bg-slate-200 rounded-lg text-sm font-bold text-slate-700">
+                    <i class="fa-solid fa-gear mr-1"></i> 設定を変えて遊ぶ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const GRID_SIZE = 32;
+        let canvas, ctx, gridCanvas, gridCtx;
+        let pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+        let historyStack = [];
+        let redoStack = [];
+        let isDrawing = false;
+        let isCanvasLocked = false;
+        let currentTool = 'pen';
+        let currentColor = '#000000';
+        let showGrid = true;
+        let soundEnabled = true;
+
+        const hiraganaList = [
+            "あ","い","う","え","お",
+            "か","き","く","け","こ",
+            "さ","し","す","せ","そ",
+            "た","ち","つ","て","と",
+            "な","に","ぬ","ね","の",
+            "は","ひ","ふ","へ","ほ",
+            "ま","み","む","め","も",
+            "や","ゆ","よ",
+            "ら","り","る","れ","ろ",
+            "わ",
+            "が","ぎ","ぐ","げ","ご",
+            "ざ","じ","ず","ぜ","ぞ",
+            "だ","ぢ","づ","で","ど",
+            "ば","び","ぶ","べ","ぼ",
+            "ぱ","ぴ","ぷ","ぺ","ぽ"
+        ];
+        let chosenStartChar = "";
+
+        let selectedTimeLimit = 90;
+        let currentRemainingTime = 90;
+        let timerInterval = null;
+
+        const defaultAvatars = [
+            'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><rect x="3" y="4" width="3" height="3" fill="#2d3436"/><rect x="10" y="4" width="3" height="3" fill="#2d3436"/><rect x="4" y="11" width="8" height="2" fill="#d63031"/></svg>'),
+            'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="3" y="5" width="3" height="3" fill="#2d3436"/><rect x="10" y="5" width="3" height="3" fill="#2d3436"/><rect x="5" y="11" width="6" height="2" fill="#0984e3"/></svg>'),
+            'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ffeaa7"/><rect x="4" y="4" width="3" height="3" fill="#2d3436"/><rect x="9" y="4" width="3" height="3" fill="#2d3436"/><rect x="5" y="10" width="6" height="3" fill="#fdcb6e"/></svg>'),
+            'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#55efc4"/><rect x="3" y="5" width="3" height="3" fill="#2d3436"/><rect x="10" y="5" width="3" height="3" fill="#2d3436"/><rect x="4" y="11" width="8" height="2" fill="#00b894"/></svg>')
+        ];
+
+        let selectedPlayerCount = 4;
+        let selectedRoundsCount = 4;
+        let players = [
+            { id: 0, name: "プレイヤー1", avatar: defaultAvatars[0], score: 0 },
+            { id: 1, name: "プレイヤー2", avatar: defaultAvatars[1], score: 0 },
+            { id: 2, name: "プレイヤー3", avatar: defaultAvatars[2], score: 0 },
+            { id: 3, name: "プレイヤー4", avatar: defaultAvatars[3], score: 0 }
+        ];
+
+        let playOrder = [0, 1, 2, 3];
+        let currentTurn = 1;
+        let maxTurns = 16;
+        let activeOrderIndex = 0;
+        let historyCards = [];
+
+        let judgmentIndex = 0;
+        let totalScore = 0;
+
+        let synth = null;
+
+        /* CUSTOM CONFIRM SYSTEM */
+        let confirmCallback = null;
+        function showCustomConfirm(title, message, onOk) {
+            document.getElementById('confirm-title').innerHTML = `<i class="fa-solid fa-circle-question text-amber-500"></i> ${title}`;
+            document.getElementById('confirm-message').innerText = message;
+            confirmCallback = onOk;
+            document.getElementById('custom-confirm-modal').classList.remove('hidden');
+            playSound('click');
+        }
+
+        function closeCustomConfirm(isOk) {
+            document.getElementById('custom-confirm-modal').classList.add('hidden');
+            if (isOk && typeof confirmCallback === 'function') {
+                confirmCallback();
+            }
+            confirmCallback = null;
+        }
+
+        /* AVATAR DRAWING SYSTEM */
+        let avatarCanvas, avatarCtx, avatarGridCanvas, avatarGridCtx;
+        let avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+        let targetAvatarPlayerIndex = 0;
+        let isAvatarDrawing = false;
+        let currentAvatarTool = 'pen';
+        let currentAvatarColor = '#000000';
+
+        function initAvatarCanvas() {
+            avatarCanvas = document.getElementById('avatar-canvas');
+            avatarCtx = avatarCanvas.getContext('2d');
+            avatarGridCanvas = document.getElementById('avatar-grid-canvas');
+            avatarGridCtx = avatarGridCanvas.getContext('2d');
+
+            avatarCtx.imageSmoothingEnabled = false;
+            avatarGridCtx.imageSmoothingEnabled = false;
+
+            avatarCanvas.addEventListener('mousedown', handleAvatarPointerDown);
+            avatarCanvas.addEventListener('mousemove', handleAvatarPointerMove);
+            window.addEventListener('mouseup', () => isAvatarDrawing = false);
+
+            avatarCanvas.addEventListener('touchstart', handleAvatarPointerDown, { passive: false });
+            avatarCanvas.addEventListener('touchmove', handleAvatarPointerMove, { passive: false });
+            window.addEventListener('touchend', () => isAvatarDrawing = false);
+        }
+
+        function openAvatarDrawModal(playerIndex) {
+            targetAvatarPlayerIndex = playerIndex;
+            avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+            drawAvatarMatrix();
+            drawAvatarGridOverlay();
+            document.getElementById('avatar-draw-modal').classList.remove('hidden');
+            playSound('click');
+        }
+
+        function closeAvatarDrawModal(save) {
+            if (save) {
+                const dataUrl = avatarCanvas.toDataURL();
+                players[targetAvatarPlayerIndex].avatar = dataUrl;
+                const preview = document.getElementById(`avatar-preview-${targetAvatarPlayerIndex}`);
+                if (preview) preview.src = dataUrl;
+                playSound('clear');
+            }
+            document.getElementById('avatar-draw-modal').classList.add('hidden');
+        }
+
+        function drawAvatarMatrix() {
+            if (!avatarCtx) return;
+            const cellSize = avatarCanvas.width / GRID_SIZE;
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    avatarCtx.fillStyle = avatarPixelMatrix[y][x];
+                    avatarCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
+        function drawAvatarGridOverlay() {
+            if (!avatarGridCtx) return;
+            avatarGridCtx.clearRect(0, 0, avatarGridCanvas.width, avatarGridCanvas.height);
+            const cellSize = avatarGridCanvas.width / GRID_SIZE;
+            avatarGridCtx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+            avatarGridCtx.lineWidth = 1;
+
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                avatarGridCtx.beginPath();
+                avatarGridCtx.moveTo(i * cellSize, 0);
+                avatarGridCtx.lineTo(i * cellSize, avatarGridCanvas.height);
+                avatarGridCtx.stroke();
+
+                avatarGridCtx.beginPath();
+                avatarGridCtx.moveTo(0, i * cellSize);
+                avatarGridCtx.lineTo(avatarGridCanvas.width, i * cellSize);
+                avatarGridCtx.stroke();
+            }
+        }
+
+        function setAvatarTool(tool) {
+            currentAvatarTool = tool;
+            document.getElementById('avatar-tool-pen').className = (tool === 'pen') ? "px-2.5 py-1 bg-sky-400 text-white rounded font-bold" : "px-2.5 py-1 bg-slate-200 text-slate-700 rounded font-bold";
+            document.getElementById('avatar-tool-eraser').className = (tool === 'eraser') ? "px-2.5 py-1 bg-sky-400 text-white rounded font-bold" : "px-2.5 py-1 bg-slate-200 text-slate-700 rounded font-bold";
+            playSound('click');
+        }
+
+        function setAvatarColor(hex) {
+            currentAvatarColor = hex;
+            playSound('click');
+        }
+
+        function clearAvatarCanvas() {
+            avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+            drawAvatarMatrix();
+            playSound('click');
+        }
+
+        function getAvatarPixelCoords(e) {
+            const rect = avatarCanvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const scaleX = avatarCanvas.width / rect.width;
+            const scaleY = avatarCanvas.height / rect.height;
+
+            const x = Math.floor((clientX - rect.left) * scaleX / (avatarCanvas.width / GRID_SIZE));
+            const y = Math.floor((clientY - rect.top) * scaleY / (avatarCanvas.height / GRID_SIZE));
+
+            return {
+                x: Math.max(0, Math.min(GRID_SIZE - 1, x)),
+                y: Math.max(0, Math.min(GRID_SIZE - 1, y))
+            };
+        }
+
+        function handleAvatarPointerDown(e) {
+            e.preventDefault();
+            isAvatarDrawing = true;
+            const { x, y } = getAvatarPixelCoords(e);
+            applyAvatarTool(x, y);
+        }
+
+        function handleAvatarPointerMove(e) {
+            if (!isAvatarDrawing) return;
+            e.preventDefault();
+            const { x, y } = getAvatarPixelCoords(e);
+            applyAvatarTool(x, y);
+        }
+
+        function applyAvatarTool(x, y) {
+            const color = (currentAvatarTool === 'eraser') ? '#ffffff' : currentAvatarColor;
+            if (avatarPixelMatrix[y][x] !== color) {
+                avatarPixelMatrix[y][x] = color;
+                drawAvatarMatrix();
+                playSound('draw');
+            }
+        }
+
+        function initAudio() {
+            if (!synth && window.Tone) {
+                synth = new Tone.Synth({
+                    oscillator: { type: "square" },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 }
+                }).toDestination();
+                synth.volume.value = -12;
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                if (type === 'draw') {
+                    synth.triggerAttackRelease("C6", "32n");
+                } else if (type === 'turn') {
+                    synth.triggerAttackRelease("E5", "16n");
+                } else if (type === 'correct') {
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("G5", "16n", now);
+                    synth.triggerAttackRelease("C6", "8n", now + 0.1);
+                } else if (type === 'bonus') {
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("E5", "16n", now);
+                    synth.triggerAttackRelease("G5", "16n", now + 0.08);
+                    synth.triggerAttackRelease("C6", "8n", now + 0.16);
+                } else if (type === 'wrong') {
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("C4", "8n", now);
+                    synth.triggerAttackRelease("F3", "4n", now + 0.15);
+                } else if (type === 'clear') {
+                    const now = Tone.now();
+                    synth.triggerAttackRelease("C5", "8n", now);
+                    synth.triggerAttackRelease("E5", "8n", now + 0.1);
+                    synth.triggerAttackRelease("G5", "8n", now + 0.2);
+                    synth.triggerAttackRelease("C6", "4n", now + 0.3);
+                } else if (type === 'click') {
+                    synth.triggerAttackRelease("G4", "32n");
+                }
+            } catch (e) {
+                console.log("Audio error:", e);
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('sound-icon');
+            if (soundEnabled) {
+                icon.className = "fa-solid fa-volume-high";
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-red-500";
+            }
+        }
+
+        function showToast(text) {
+            const toast = document.getElementById('toast-msg');
+            document.getElementById('toast-text').innerText = text;
+            toast.classList.remove('hidden');
+            playSound('click');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        function openTitleModal() {
+            stopTimer();
+            document.getElementById('title-modal').classList.remove('hidden');
+            document.getElementById('setup-modal').classList.add('hidden');
+            document.getElementById('shuffle-modal').classList.add('hidden');
+            document.getElementById('judgment-modal').classList.add('hidden');
+            document.getElementById('clear-modal').classList.add('hidden');
+        }
+
+        function goToSetupFromTitle() {
+            playSound('click');
+            document.getElementById('title-modal').classList.add('hidden');
+            openSetupModal();
+        }
+
+        function openSetupModal() {
+            stopTimer();
+            document.getElementById('title-modal').classList.add('hidden');
+            document.getElementById('setup-modal').classList.remove('hidden');
+            document.getElementById('shuffle-modal').classList.add('hidden');
+            document.getElementById('judgment-modal').classList.add('hidden');
+            document.getElementById('clear-modal').classList.add('hidden');
+            renderSetupPlayerList();
+            updateRoundsSummaryText();
+        }
+
+        function setPlayerCount(count) {
+            selectedPlayerCount = count;
+            document.querySelectorAll('.player-count-btn').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-count')) === count) {
+                    btn.className = "player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-white bg-pink-500 border-slate-700";
+                } else {
+                    btn.className = "player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-slate-700 bg-white";
+                }
+            });
+            renderSetupPlayerList();
+            updateRoundsSummaryText();
+            playSound('click');
+        }
+
+        function setRoundsCount(rounds) {
+            selectedRoundsCount = rounds;
+            document.querySelectorAll('.rounds-btn').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-rounds')) === rounds) {
+                    btn.className = "rounds-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-white bg-pink-500 border-slate-700";
+                } else {
+                    btn.className = "rounds-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white";
+                }
+            });
+            updateRoundsSummaryText();
+            playSound('click');
+        }
+
+        function updateRoundsSummaryText() {
+            const totalTurns = selectedPlayerCount * selectedRoundsCount;
+            document.getElementById('rounds-summary-text').innerText = `1人${selectedRoundsCount}回ずつ（全${totalTurns}ターン）`;
+        }
+
+        function setTimeLimit(seconds) {
+            selectedTimeLimit = seconds;
+            document.querySelectorAll('.time-limit-btn').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-time')) === seconds) {
+                    btn.className = "time-limit-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-white bg-pink-500 border-slate-700";
+                } else {
+                    btn.className = "time-limit-btn pixel-box-interactive py-1.5 text-center rounded font-black text-xs text-slate-700 bg-white";
+                }
+            });
+            playSound('click');
+        }
+
+        function startTimer() {
+            stopTimer();
+            isCanvasLocked = false;
+            currentRemainingTime = selectedTimeLimit;
+            updateTimerUI();
+
+            timerInterval = setInterval(() => {
+                currentRemainingTime--;
+                updateTimerUI();
+
+                if (currentRemainingTime <= 10 && currentRemainingTime > 0) {
+                    playSound('click');
+                }
+
+                if (currentRemainingTime <= 0) {
+                    stopTimer();
+                    isCanvasLocked = true;
+                    showToast("時間切れ！これ以上書き込みできません");
+                    playSound('click');
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function updateTimerUI() {
+            const display = document.getElementById('timer-display');
+            const bar = document.getElementById('timer-bar');
+            if (!display || !bar) return;
+
+            display.innerText = `${currentRemainingTime}秒`;
+            const percent = Math.max(0, (currentRemainingTime / selectedTimeLimit) * 100);
+            bar.style.width = `${percent}%`;
+
+            if (currentRemainingTime <= 10) {
+                bar.className = "bg-red-500 h-full transition-all duration-300";
+                display.className = "text-base font-black text-red-500 w-12 text-right";
+            } else if (currentRemainingTime <= 30) {
+                bar.className = "bg-amber-400 h-full transition-all duration-300";
+                display.className = "text-base font-black text-amber-600 w-12 text-right";
+            } else {
+                bar.className = "bg-emerald-400 h-full transition-all duration-300";
+                display.className = "text-base font-black text-slate-800 w-12 text-right";
+            }
+        }
+
+        function renderSetupPlayerList() {
+            const container = document.getElementById('player-setup-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const row = document.createElement('div');
+                row.className = 'flex items-center gap-2 p-1.5 bg-slate-50 border border-slate-200 rounded-lg';
+                row.innerHTML = `
+                    <div class="relative group shrink-0">
+                        <img id="avatar-preview-${i}" src="${players[i].avatar}" class="w-9 h-9 rounded-lg border-2 border-slate-400 bg-white object-cover">
+                    </div>
+                    <div class="flex-1 flex flex-col gap-1">
+                        <input type="text" id="player-name-${i}" value="${players[i].name}" placeholder="プレイヤー名" class="w-full px-2 py-0.5 text-xs border border-slate-300 rounded font-bold text-slate-800">
+                        <div class="flex items-center gap-1 text-[10px]">
+                            <button onclick="openAvatarDrawModal(${i})" class="px-2 py-0.5 bg-amber-200 text-amber-900 rounded font-bold hover:bg-amber-300">
+                                <i class="fa-solid fa-paintbrush"></i> ドット絵で描く
+                            </button>
+                            <label for="avatar-input-${i}" class="px-2 py-0.5 bg-slate-200 text-slate-700 rounded font-bold cursor-pointer hover:bg-slate-300">
+                                <i class="fa-solid fa-upload"></i> 画像選ぶ
+                            </label>
+                            <input type="file" id="avatar-input-${i}" accept="image/*" class="hidden" onchange="handleAvatarUpload(${i}, event)">
+                        </div>
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+        }
+
+        function handleAvatarUpload(index, event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    players[index].avatar = e.target.result;
+                    const preview = document.getElementById(`avatar-preview-${index}`);
+                    if (preview) preview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function startOrderShufflePhase() {
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const nameInput = document.getElementById(`player-name-${i}`);
+                if (nameInput && nameInput.value.trim()) {
+                    players[i].name = nameInput.value.trim();
+                }
+                players[i].score = 0;
+            }
+
+            document.getElementById('setup-modal').classList.add('hidden');
+            document.getElementById('shuffle-modal').classList.remove('hidden');
+            document.getElementById('start-shuffled-game-btn').classList.add('hidden');
+            document.getElementById('start-char-box').classList.add('hidden');
+            document.getElementById('shuffle-status-text').innerText = "順番と最初の文字を決めています...";
+
+            const container = document.getElementById('shuffled-order-list');
+            container.className = `grid grid-cols-${selectedPlayerCount} gap-2 bg-amber-50 p-3 rounded-lg border-2 border-amber-300 min-h-[120px] items-center`;
+            container.innerHTML = '<div class="col-span-full text-xs font-bold text-slate-500 py-4 text-center">シャッフル中...</div>';
+
+            let count = 0;
+            const shuffleInterval = setInterval(() => {
+                let tempOrder = Array.from({length: selectedPlayerCount}, (_, i) => i);
+                tempOrder.sort(() => Math.random() - 0.5);
+                
+                container.innerHTML = '';
+                tempOrder.forEach((pIdx, idx) => {
+                    const card = document.createElement('div');
+                    card.className = "flex flex-col items-center justify-center p-2 bg-white rounded-lg border-2 border-amber-200 shadow-sm";
+                    card.innerHTML = `
+                        <span class="text-[10px] font-black text-amber-600">${idx + 1}番手</span>
+                        <img src="${players[pIdx].avatar}" class="w-8 h-8 rounded-lg object-cover border my-1">
+                        <span class="text-xs font-bold text-slate-800 truncate max-w-[80px]">${players[pIdx].name}</span>
+                    `;
+                    container.appendChild(card);
+                });
+
+                playSound('click');
+                count++;
+                if (count > 12) {
+                    clearInterval(shuffleInterval);
+                    playOrder = Array.from({length: selectedPlayerCount}, (_, i) => i).sort(() => Math.random() - 0.5);
+                    chosenStartChar = hiraganaList[Math.floor(Math.random() * hiraganaList.length)];
+                    renderFinalShuffledOrder();
+                }
+            }, 120);
+        }
+
+        function renderFinalShuffledOrder() {
+            const container = document.getElementById('shuffled-order-list');
+            container.className = `grid grid-cols-${selectedPlayerCount} gap-2 bg-amber-50 p-3 rounded-lg border-2 border-amber-300 items-center`;
+            container.innerHTML = '';
+            
+            playOrder.forEach((pIdx, idx) => {
+                const card = document.createElement('div');
+                card.className = "flex flex-col items-center justify-center p-3 bg-white rounded-xl border-2 border-pink-400 shadow-md card-pop-in relative overflow-hidden";
+                card.innerHTML = `
+                    <span class="absolute top-0 left-0 bg-pink-500 text-white font-black text-[10px] px-2 py-0.5 rounded-br-lg">${idx + 1}番手</span>
+                    <img src="${players[pIdx].avatar}" class="w-10 h-10 rounded-lg object-cover border-2 border-slate-700 bg-white mt-3 mb-1">
+                    <span class="text-xs font-black text-slate-800 truncate max-w-[90px]">${players[pIdx].name}</span>
+                `;
+                container.appendChild(card);
+            });
+
+            const charDisplay = document.getElementById('start-char-display');
+            if (charDisplay) {
+                charDisplay.innerText = `「 ${chosenStartChar} 」`;
+            }
+            document.getElementById('start-char-box').classList.remove('hidden');
+
+            document.getElementById('shuffle-status-text').innerText = "プレイ順番とスタート文字が決定しました！";
+            document.getElementById('start-shuffled-game-btn').classList.remove('hidden');
+            playSound('clear');
+        }
+
+        function startGameWithShuffledOrder() {
+            document.getElementById('shuffle-modal').classList.add('hidden');
+            
+            currentTurn = 1;
+            maxTurns = selectedPlayerCount * selectedRoundsCount;
+            activeOrderIndex = 0;
+            historyCards = [];
+
+            updateTurnDisplays();
+            renderPlayerHeader();
+            renderHistoryCards();
+            clearCanvas();
+
+            startTimer();
+        }
+
+        function updateTurnDisplays() {
+            const currentRound = Math.floor((currentTurn - 1) / selectedPlayerCount) + 1;
+            document.getElementById('round-display').innerText = `${currentRound}周目`;
+            document.getElementById('turn-display').innerText = `(${currentTurn} / ${maxTurns})`;
+
+            const hintEl = document.getElementById('first-turn-hint');
+            const hintCharEl = document.getElementById('hint-start-char-display');
+            if (hintEl && hintCharEl) {
+                if (currentTurn === 1) {
+                    hintCharEl.innerText = `「 ${chosenStartChar} 」`;
+                    hintEl.classList.remove('hidden');
+                } else {
+                    hintEl.classList.add('hidden');
+                }
+            }
+        }
+
+        function confirmReset() {
+            showCustomConfirm("設定に戻る", "現在のゲーム内容を消去して最初からやり直しますか？", () => {
+                stopTimer();
+                openSetupModal();
+            });
+        }
+
+        function restartGameSameSettings() {
+            players.forEach(p => p.score = 0);
+            startOrderShufflePhase();
+        }
+
+        function renderPlayerHeader() {
+            const container = document.getElementById('players-header-container');
+            container.innerHTML = '';
+
+            for (let i = 0; i < selectedPlayerCount; i++) {
+                const playerIdx = playOrder[i];
+                const isActive = (i === activeOrderIndex);
+                const playerCard = document.createElement('div');
+                playerCard.className = `flex items-center gap-1.5 px-2 py-1 rounded-lg border-2 transition-all ${isActive ? 'active-player-glow bg-amber-100 border-red-500' : 'bg-slate-100 border-slate-300 opacity-70'}`;
+                playerCard.innerHTML = `
+                    <img src="${players[playerIdx].avatar}" class="w-6 h-6 rounded-md border border-slate-400 bg-white object-cover">
+                    <span class="text-xs font-black ${isActive ? 'text-red-600' : 'text-slate-700'} max-w-[80px] truncate">${players[playerIdx].name}</span>
+                `;
+                container.appendChild(playerCard);
+            }
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('pixel-canvas');
+            ctx = canvas.getContext('2d');
+            gridCanvas = document.getElementById('grid-canvas');
+            gridCtx = gridCanvas.getContext('2d');
+
+            ctx.imageSmoothingEnabled = false;
+            gridCtx.imageSmoothingEnabled = false;
+        }
+
+        function drawMatrix() {
+            if (!ctx) return;
+            const cellSize = canvas.width / GRID_SIZE;
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    ctx.fillStyle = pixelMatrix[y][x];
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
+        function drawGridOverlay() {
+            if (!gridCtx) return;
+            gridCtx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+            if (!showGrid) return;
+
+            const cellSize = gridCanvas.width / GRID_SIZE;
+            gridCtx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+            gridCtx.lineWidth = 1;
+
+            for (let i = 0; i <= GRID_SIZE; i++) {
+                gridCtx.beginPath();
+                gridCtx.moveTo(i * cellSize, 0);
+                gridCtx.lineTo(i * cellSize, gridCanvas.height);
+                gridCtx.stroke();
+
+                gridCtx.beginPath();
+                gridCtx.moveTo(0, i * cellSize);
+                gridCtx.lineTo(gridCanvas.width, i * cellSize);
+                gridCtx.stroke();
+            }
+        }
+
+        function getPixelCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const x = Math.floor((clientX - rect.left) * scaleX / (canvas.width / GRID_SIZE));
+            const y = Math.floor((clientY - rect.top) * scaleY / (canvas.height / GRID_SIZE));
+
+            return {
+                x: Math.max(0, Math.min(GRID_SIZE - 1, x)),
+                y: Math.max(0, Math.min(GRID_SIZE - 1, y))
+            };
+        }
+
+        function handlePointerDown(e) {
+            e.preventDefault();
+            if (isCanvasLocked) {
+                showToast("制限時間切れです！【この絵で交代！】を押してください");
+                return;
+            }
+            isDrawing = true;
+            saveCanvasState();
+            const { x, y } = getPixelCoords(e);
+            applyTool(x, y);
+        }
+
+        function handlePointerMove(e) {
+            if (!isDrawing || isCanvasLocked) return;
+            e.preventDefault();
+            const { x, y } = getPixelCoords(e);
+            if (currentTool === 'pen' || currentTool === 'eraser') {
+                applyTool(x, y);
+            }
+        }
+
+        function handlePointerUp() {
+            isDrawing = false;
+        }
+
+        function applyTool(x, y) {
+            if (currentTool === 'pen') {
+                if (pixelMatrix[y][x] !== currentColor) {
+                    pixelMatrix[y][x] = currentColor;
+                    drawMatrix();
+                    playSound('draw');
+                }
+            } else if (currentTool === 'eraser') {
+                if (pixelMatrix[y][x] !== '#ffffff') {
+                    pixelMatrix[y][x] = '#ffffff';
+                    drawMatrix();
+                    playSound('draw');
+                }
+            } else if (currentTool === 'bucket') {
+                const targetColor = pixelMatrix[y][x];
+                if (targetColor !== currentColor) {
+                    floodFill(x, y, targetColor, currentColor);
+                    drawMatrix();
+                    playSound('draw');
+                }
+            }
+        }
+
+        function floodFill(startX, startY, targetColor, fillColor) {
+            const stack = [[startX, startY]];
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) continue;
+                if (pixelMatrix[y][x] === targetColor) {
+                    pixelMatrix[y][x] = fillColor;
+                    stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+                }
+            }
+        }
+
+        function saveCanvasState() {
+            historyStack.push(pixelMatrix.map(row => [...row]));
+            if (historyStack.length > 20) historyStack.shift();
+            redoStack = [];
+        }
+
+        function undo() {
+            if (historyStack.length > 0) {
+                redoStack.push(pixelMatrix.map(row => [...row]));
+                pixelMatrix = historyStack.pop();
+                drawMatrix();
+                playSound('click');
+            }
+        }
+
+        function redo() {
+            if (redoStack.length > 0) {
+                historyStack.push(pixelMatrix.map(row => [...row]));
+                pixelMatrix = redoStack.pop();
+                drawMatrix();
+                playSound('click');
+            }
+        }
+
+        function clearCanvas() {
+            pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+            historyStack = [];
+            redoStack = [];
+            drawMatrix();
+        }
+
+        function clearCanvasPrompt() {
+            showCustomConfirm("全消去の確認", "キャンバスを全消去しますか？", () => {
+                clearCanvas();
+                playSound('click');
+            });
+        }
+
+        function setTool(tool) {
+            currentTool = tool;
+            document.querySelectorAll('.tool-btn').forEach(btn => {
+                btn.classList.remove('active-tool', 'bg-sky-400', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+            });
+            const activeBtn = document.getElementById(`tool-${tool}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('bg-slate-100', 'text-slate-700');
+                activeBtn.classList.add('active-tool', 'bg-sky-400', 'text-white');
+            }
+            playSound('click');
+        }
+
+        function setColor(hex) {
+            currentColor = hex;
+            document.getElementById('color-picker').value = hex;
+            playSound('click');
+        }
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            drawGridOverlay();
+            playSound('click');
+        }
+
+        function submitTurn() {
+            const activePlayerIdx = playOrder[activeOrderIndex];
+            const canvasData = canvas.toDataURL();
+            const cardObj = {
+                turn: currentTurn,
+                player: players[activePlayerIdx],
+                imageData: canvasData,
+                status: null,
+                scoreEarned: 0
+            };
+
+            historyCards.unshift(cardObj);
+
+            currentTurn++;
+            activeOrderIndex = (activeOrderIndex + 1) % selectedPlayerCount;
+
+            isCanvasLocked = false;
+            clearCanvas();
+            updateTurnDisplays();
+            renderPlayerHeader();
+            renderHistoryCards();
+
+            if (currentTurn > maxTurns) {
+                triggerGameFinishSequence();
+            } else {
+                playSound('turn');
+                startTimer();
+            }
+        }
+
+        function finishGameEarly() {
+            if (historyCards.length === 0) {
+                showToast("まだドット絵が1枚も描かれていません");
+                return;
+            }
+            showCustomConfirm("ゲーム終了の確認", "プレイを終了して答え合わせ＆審判フェーズに入りますか？", () => {
+                triggerGameFinishSequence();
+            });
+        }
+
+        function triggerGameFinishSequence() {
+            stopTimer();
+            playSound('clear');
+            
+            const overlay = document.getElementById('finish-overlay');
+            if (overlay) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    startJudgmentPhase();
+                }, 2000);
+            } else {
+                startJudgmentPhase();
+            }
+        }
+
+        function renderHistoryCards() {
+            const container = document.getElementById('cards-history-list');
+            if (historyCards.length === 0) {
+                container.innerHTML = `
+                    <div id="empty-history-msg" class="col-span-2 text-center py-12 text-slate-400 text-xs">
+                        <i class="fa-solid fa-paintbrush text-2xl mb-2 opacity-40"></i><br>
+                        最初のドット絵を描いて<br>「この絵で交代！」を押してください
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = '';
+            historyCards.forEach((card) => {
+                const cardEl = document.createElement('div');
+                cardEl.className = "pixel-box p-1.5 bg-slate-50 rounded-lg space-y-1 card-pop-in flex flex-col justify-between";
+                
+                cardEl.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-1">
+                        <span class="bg-red-500 text-white font-black text-[9px] px-1 py-0.5 rounded">T${card.turn}</span>
+                        <div class="flex items-center gap-1 max-w-[70%] truncate">
+                            <img src="${card.player.avatar}" class="w-3.5 h-3.5 rounded object-cover shrink-0">
+                            <span class="text-[10px] font-bold text-slate-700 truncate">${card.player.name}</span>
+                        </div>
+                    </div>
+                    <div class="w-full bg-white border-2 border-slate-300 rounded p-1 flex items-center justify-center">
+                        <img src="${card.imageData}" class="w-full aspect-square object-contain pixelated rounded">
+                    </div>
+                `;
+                container.appendChild(cardEl);
+            });
+        }
+
+        function startJudgmentPhase() {
+            stopTimer();
+            judgmentIndex = 0;
+            totalScore = 0;
+            players.forEach(p => p.score = 0);
+
+            document.getElementById('judgment-modal').classList.remove('hidden');
+            renderJudgmentStep();
+        }
+
+        function renderJudgmentStep() {
+            const totalCards = historyCards.length;
+            const chronologicalCards = [...historyCards].reverse();
+            const currentCard = chronologicalCards[judgmentIndex];
+
+            document.getElementById('judge-turn-badge').innerText = `TURN ${currentCard.turn} / ${totalCards}`;
+            document.getElementById('judge-score-sum').innerText = totalScore;
+            document.getElementById('judge-player-avatar').src = currentCard.player.avatar;
+            document.getElementById('judge-player-name').innerText = currentCard.player.name;
+            document.getElementById('judge-card-image').src = currentCard.imageData;
+
+            playSound('click');
+        }
+
+        function judgeCard(resultType) {
+            const chronologicalCards = [...historyCards].reverse();
+            const currentCard = chronologicalCards[judgmentIndex];
+
+            let earned = 0;
+            if (resultType === 'success') {
+                earned = 50;
+                playSound('correct');
+            } else if (resultType === 'bonus') {
+                earned = 100;
+                playSound('bonus');
+            } else {
+                earned = 0;
+                playSound('wrong');
+            }
+
+            currentCard.status = resultType;
+            currentCard.scoreEarned = earned;
+            
+            totalScore += earned;
+            currentCard.player.score += earned;
+
+            judgmentIndex++;
+            if (judgmentIndex < historyCards.length) {
+                renderJudgmentStep();
+            } else {
+                triggerFinalResults();
+            }
+        }
+
+        function triggerFinalResults() {
+            document.getElementById('judgment-modal').classList.add('hidden');
+            playSound('clear');
+            if (window.confetti) {
+                confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+            }
+
+            const totalCards = historyCards.length;
+            const successCount = historyCards.filter(c => c.status === 'success' || c.status === 'bonus').length;
+            const ratePercent = Math.round((successCount / totalCards) * 100) || 0;
+
+            document.getElementById('final-score-display').innerText = totalScore;
+            document.getElementById('final-rate-display').innerText = `${ratePercent}% (${successCount}/${totalCards})`;
+
+            let titleText = "迷作を生み出しし者たち";
+            if (ratePercent === 100) {
+                titleText = "伝説のドット絵マスター";
+            } else if (ratePercent >= 80) {
+                titleText = "心通い合う天才画伯チーム";
+            } else if (ratePercent >= 50) {
+                titleText = "ドット絵名人グループ";
+            }
+            document.getElementById('final-title-display').innerText = titleText;
+
+            const rankingList = document.getElementById('player-ranking-list');
+            rankingList.innerHTML = '';
+
+            const sortedPlayers = [...players].slice(0, selectedPlayerCount).sort((a, b) => b.score - a.score);
+            const topScore = sortedPlayers[0].score;
+
+            sortedPlayers.forEach((p, rank) => {
+                const isMVP = (p.score === topScore && topScore > 0);
+                const rankCard = document.createElement('div');
+                rankCard.className = `p-2 rounded-lg border-2 text-center flex flex-col items-center justify-between relative ${isMVP ? 'bg-amber-100 border-amber-500 shadow' : 'bg-white border-slate-300'}`;
+                
+                rankCard.innerHTML = `
+                    ${isMVP ? '<span class="absolute -top-2.5 -right-2 bg-amber-500 text-white font-black text-[9px] px-1.5 py-0.5 rounded-full border border-slate-700"><i class="fa-solid fa-crown"></i> MVP</span>' : ''}
+                    <div class="flex items-center gap-1.5 mb-1">
+                        <img src="${p.avatar}" class="w-6 h-6 rounded object-cover border border-slate-400">
+                        <span class="text-xs font-black text-slate-800 truncate max-w-[70px]">${p.name}</span>
+                    </div>
+                    <span class="text-sm font-black text-pink-600">${p.score} <span class="text-[10px] text-slate-600">pt</span></span>
+                `;
+                rankingList.appendChild(rankCard);
+            });
+
+            const gallery = document.getElementById('final-gallery');
+            gallery.innerHTML = '';
+
+            const chronologicalCards = [...historyCards].reverse();
+            chronologicalCards.forEach(card => {
+                const item = document.createElement('div');
+                const isSuccess = (card.status === 'success');
+                const isBonus = (card.status === 'bonus');
+
+                let badgeHtml = '<span class="text-red-500">❌ 0pt</span>';
+                if (isBonus) badgeHtml = '<span class="text-amber-600 font-extrabold"><i class="fa-solid fa-award"></i> +100pt</span>';
+                else if (isSuccess) badgeHtml = '<span class="text-emerald-600 font-bold"><i class="fa-solid fa-check"></i> +50pt</span>';
+
+                item.className = `p-1.5 border-2 rounded-lg text-center space-y-1 shadow-sm relative ${isBonus ? 'bg-amber-100 border-amber-400' : isSuccess ? 'bg-emerald-50 border-emerald-400' : 'bg-red-50 border-red-300'}`;
+                item.innerHTML = `
+                    <div class="flex items-center justify-between text-[10px] font-bold text-slate-600">
+                        <span>T${card.turn}: ${card.player.name}</span>
+                        <span>${badgeHtml}</span>
+                    </div>
+                    <img src="${card.imageData}" class="w-full aspect-square object-contain pixelated border border-slate-200 rounded bg-white">
+                `;
+                gallery.appendChild(item);
+            });
+
+            document.getElementById('clear-modal').classList.remove('hidden');
+        }
+
+        const paletteColors = [
+            '#000000', '#747d8c', '#ffffff', '#ff4757', '#ff6b81',
+            '#ffa502', '#eccc68', '#2ed573', '#1e90ff', '#70a1ff',
+            '#5352ed', '#a29bfe', '#e84393', '#8e44ad', '#8395a7'
+        ];
+
+        function renderPalette() {
+            const container = document.getElementById('palette-container');
+            if (!container) return;
+            container.innerHTML = '';
+            paletteColors.forEach(color => {
+                const swatch = document.createElement('button');
+                swatch.className = 'w-5 h-5 rounded-md border border-slate-400 shadow-sm transition-transform active:scale-90';
+                swatch.style.backgroundColor = color;
+                swatch.onclick = () => setColor(color);
+                container.appendChild(swatch);
+            });
+        }
+
+        window.onload = function() {
+            initCanvas();
+            initAvatarCanvas();
+
+            canvas.addEventListener('mousedown', handlePointerDown);
+            canvas.addEventListener('mousemove', handlePointerMove);
+            window.addEventListener('mouseup', handlePointerUp);
+
+            canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+            canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+            window.addEventListener('touchend', handlePointerUp);
+
+            renderPalette();
+            setTool('pen');
+            drawMatrix();
+            drawGridOverlay();
+
+            openTitleModal();
+        };
+    </script>
+</body>
+</html>
