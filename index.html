@@ -615,6 +615,11 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
+        // ==========================================
+        // GAS API 設定領域
+        // ==========================================
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwmIb-rFhPPKmimtSO62N38mWC2HxGopEgwQOytnwVY35UkOE2VhQApIT8eL_sSUxjuDA/exec';
+
         const GRID_SIZE = 32;
         let canvas, ctx, gridCanvas, gridCtx;
         let pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
@@ -1381,19 +1386,60 @@
             playSound('click');
         }
 
+        /**
+         * 毎ターンのデータをGoogle Drive (GAS) へバックグラウンド送信する処理
+         */
+        async function sendTurnDataToGAS(turnNumber, pMatrix, canvasImageBase64, playerName) {
+            if (!GAS_API_URL) return;
+
+            const payload = {
+                turn: turnNumber,
+                player: playerName,
+                pixelMatrix: pMatrix,       // 32x32のカラーコード2次元配列
+                imageData: canvasImageBase64 // 画質保持・プレビュー用 Base64
+            };
+
+            try {
+                // CORS回避のため text/plain で送信
+                const response = await fetch(GAS_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                if (result.status === 'success') {
+                    console.log(`[GAS Drive] Turn ${turnNumber} 保存完了 (File: ${result.fileName})`);
+                } else {
+                    console.error('[GAS Drive] エラー:', result.message);
+                }
+            } catch (error) {
+                console.error('[GAS Drive] 通信エラー:', error);
+            }
+        }
+
         function submitTurn() {
             const activePlayerIdx = playOrder[activeOrderIndex];
             const canvasData = canvas.toDataURL();
+            const currentTurnNum = currentTurn;
+            const activePlayerName = players[activePlayerIdx].name;
+
+            // 1. ローカル履歴に格納
             const cardObj = {
-                turn: currentTurn,
+                turn: currentTurnNum,
                 player: players[activePlayerIdx],
                 imageData: canvasData,
                 status: null,
                 scoreEarned: 0
             };
-
             historyCards.unshift(cardObj);
 
+            // 2. Google Drive (GAS) へバックグラウンド非同期送信
+            sendTurnDataToGAS(currentTurnNum, pixelMatrix, canvasData, activePlayerName);
+
+            // 3. 次のターンへの遷移処理
             currentTurn++;
             activeOrderIndex = (activeOrderIndex + 1) % selectedPlayerCount;
 
