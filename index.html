@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -185,9 +186,9 @@
             color: #ff3838;
             text-shadow: 
                 2px 2px 0px #ffdd59,
-                -1.5px -1.5px 0px #ffffff,
-                1.5px -1.5px 0px #ffffff,
-                -1.5px 1.5px 0px #ffffff,
+                -1.5px -1.5px 0px #faf6e8,
+                1.5px -1.5px 0px #faf6e8,
+                -1.5px 1.5px 0px #faf6e8,
                 3.5px 3.5px 0px #1e272e;
             letter-spacing: 0.05em;
         }
@@ -198,51 +199,90 @@
             box-shadow: 3px 3px 0px #000000;
         }
 
-        /* ★ 画面全体に敷き詰める背景ギャラリー用のスタイル */
+        .checkerboard-bg {
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(45deg, #e2e8f0 25%, transparent 25%),
+                linear-gradient(-45deg, #e2e8f0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e2e8f0 75%),
+                linear-gradient(-45deg, transparent 75%, #e2e8f0 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+
         .title-bg-gallery {
             position: absolute;
             inset: 0;
             width: 100vw;
             height: 100vh;
             z-index: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            grid-auto-rows: 120px;
-            gap: 12px;
-            padding: 12px;
-            box-sizing: border-box;
             overflow: hidden;
-            opacity: 0.9;
+            pointer-events: none;
         }
 
-        .gallery-card {
-            width: 100%;
-            height: 100%;
-            background-color: transparent;
-            overflow: hidden;
+        .floating-item {
+            position: absolute;
+            width: 130px;
+            height: 130px;
             display: flex;
             align-items: center;
             justify-content: center;
+            will-change: transform;
         }
 
-        .gallery-card img {
+        .floating-item img {
             width: 100%;
             height: 100%;
             image-rendering: pixelated;
             object-fit: contain;
+            filter: drop-shadow(3px 5px 8px rgba(0,0,0,0.18));
         }
 
-        /* タイトルモーダルのメインUI（前面に浮き上がる要素） */
+        @keyframes float-pattern-1 {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            33% { transform: translate(120px, -90px) rotate(25deg) scale(1.05); }
+            66% { transform: translate(-80px, 110px) rotate(-15deg) scale(0.95); }
+            100% { transform: translate(40px, -50px) rotate(10deg) scale(1); }
+        }
+
+        @keyframes float-pattern-2 {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-140px, 70px) rotate(-30deg); }
+            50% { transform: translate(90px, 130px) rotate(15deg); }
+            75% { transform: translate(-60px, -90px) rotate(-10deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        @keyframes float-pattern-3 {
+            0% { transform: translate(0, 0) rotate(0deg) scale(0.9); }
+            40% { transform: translate(100px, 100px) rotate(45deg) scale(1.1); }
+            80% { transform: translate(-110px, -70px) rotate(-20deg) scale(1); }
+            100% { transform: translate(0, 0) rotate(0deg) scale(0.9); }
+        }
+
+        @keyframes float-pattern-4 {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            30% { transform: translate(-90px, -110px) rotate(-25deg); }
+            70% { transform: translate(130px, 80px) rotate(35deg); }
+            100% { transform: translate(-30px, 40px) rotate(-5deg); }
+        }
+
+        @keyframes float-pattern-5 {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1.05); }
+            50% { transform: translate(80px, -140px) rotate(180deg) scale(0.95); }
+            100% { transform: translate(0, 0) rotate(360deg) scale(1.05); }
+        }
+
         .title-content-card {
             position: relative;
             z-index: 10;
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(6px);
-            border: 4px solid #1e293b;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            border-radius: 24px;
+            background-color: rgba(250, 246, 232, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 4px solid #1e272e;
+            box-shadow: 6px 6px 0px #1e272e;
+            border-radius: 1.5rem;
         }
-        
     </style>
 </head>
 <body class="h-screen bg-slate-700 flex items-center justify-center p-2 overflow-hidden">
@@ -365,7 +405,7 @@
                     <span id="hint-start-char-display" class="text-base font-black text-pink-600 bg-white px-3 py-0.5 rounded-md border border-pink-300 shadow-inner">「あ」</span>
                 </div>
 
-                <div class="relative border-4 border-slate-700 shadow-lg bg-white rounded flex items-center justify-center overflow-hidden my-auto">
+                <div class="relative border-4 border-slate-700 shadow-lg checkerboard-bg rounded flex items-center justify-center overflow-hidden my-auto">
                     <canvas id="pixel-canvas" width="512" height="512" class="cursor-crosshair block max-h-[60vh] max-w-[60vh] aspect-square"></canvas>
                     <canvas id="grid-canvas" width="512" height="512" class="pointer-events-none absolute top-0 left-0 max-h-[60vh] max-w-[60vh] aspect-square"></canvas>
                 </div>
@@ -412,20 +452,20 @@
     </div>
 
     <!-- FULLSCREEN TITLE SCREEN -->
-    <div id="title-modal" class="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-hidden bg-gradient-to-br from-sky-400 via-emerald-200 to-amber-100">
+    <div id="title-modal" class="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-hidden bg-[#faf6e8]">
         
-        <!-- ★ 画面全体に広がる最背面ギャラリーレイヤー -->
+        <!-- 画面全体に広がる最背面ギャラリーレイヤー -->
         <div id="title-gallery" class="title-bg-gallery"></div>
 
         <!-- 最前面に浮かび上がるタイトルカード -->
-        <div class="title-content-card w-full max-w-xl p-8 sm:p-10 flex flex-col items-center justify-center text-center">
+        <div class="title-content-card w-full max-w-3xl p-8 sm:p-12 flex flex-col items-center justify-center text-center">
             <div id="title-logo-wrapper" class="flex items-center justify-center">
-                <h1 class="arcade-title-text text-4xl sm:text-6xl font-black leading-tight my-1">
-                    ドットで<br>お絵かきしりとり
+                <h1 class="arcade-title-text text-4xl sm:text-6xl font-black leading-tight my-1 whitespace-nowrap">
+                    ドットで<br>お絵描きしりとり
                 </h1>
             </div>
 
-            <div class="mt-4 inline-block arcade-subtitle-badge px-6 py-2 rounded-xl text-slate-900 font-black text-xs sm:text-base tracking-wide">
+            <div class="mt-5 inline-block arcade-subtitle-badge px-8 py-2.5 rounded-xl text-slate-900 font-black text-xs sm:text-base tracking-wide">
                 描いたドット絵をつないで、みんなで高得点を目指そう！
             </div>
 
@@ -505,7 +545,7 @@
             </h3>
             <p class="text-[11px] font-bold text-slate-500">32x32のキャンバスに練習を兼ねて顔を描いてみよう！</p>
 
-            <!-- Tools & Color -->
+            <!-- Color Picker & Palette -->
             <div class="flex items-center gap-2 w-full justify-between bg-slate-100 p-2 rounded-lg text-xs font-bold border border-slate-200">
                 <div class="flex gap-1">
                     <button onclick="setAvatarTool('pen')" id="avatar-tool-pen" class="px-2.5 py-1 bg-sky-400 text-white rounded font-bold">
@@ -525,7 +565,7 @@
             </div>
 
             <!-- Canvas -->
-            <div class="relative border-4 border-slate-700 shadow-md bg-white rounded overflow-hidden">
+            <div class="relative border-4 border-slate-700 shadow-md checkerboard-bg rounded overflow-hidden">
                 <canvas id="avatar-canvas" width="256" height="256" class="cursor-crosshair block w-64 h-64 aspect-square"></canvas>
                 <canvas id="avatar-grid-canvas" width="256" height="256" class="pointer-events-none absolute top-0 left-0 w-64 h-64 aspect-square"></canvas>
             </div>
@@ -665,66 +705,73 @@
         // ==========================================
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbycWKNXftdaTWVSfEeZxMR9uw78XKzbfUyAox44IrkLJXFLDcVUZMoUH6rr7FqmSHaW0Q/exec';
 
-        // 画面読み込み時にギャラリーを取得して表示
+        // 画面読み込み時にギャラリーを表示するプレースホルダー関数
+        function loadTitleGallery() {
+            // ローカルストレージやデフォルトアイテムからタイトル画面の背景ギャラリーを生成
+            const sampleItems = [
+                { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><circle cx="8" cy="8" r="6" fill="#ffeaa7"/></svg>') },
+                { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="4" y="4" width="8" height="8" fill="#55efc4"/></svg>') }
+            ];
+            window.cachedGalleryItems = sampleItems;
+            renderTitleBgGallery(sampleItems);
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             loadTitleGallery();
         });
 
-        // 画面リサイズ時にも敷き詰め枚数を再計算
         window.addEventListener("resize", () => {
             if (window.cachedGalleryItems) {
                 renderTitleBgGallery(window.cachedGalleryItems);
             }
         });
 
-        /**
-         * GASから作品データを取得してタイトル背景いっぱいに敷き詰める
-         */
-        async function loadTitleGallery() {
-            const galleryContainer = document.getElementById("title-gallery");
-            if (!galleryContainer) return;
-
-            try {
-                const response = await fetch(`${GAS_API_URL}?action=getGallery`);
-                const data = await response.json();
-
-                const publicItems = data.filter(item => item.status === "公開");
-
-                if (publicItems.length === 0) return;
-
-                window.cachedGalleryItems = publicItems;
-                renderTitleBgGallery(publicItems);
-
-            } catch (error) {
-                console.error("ギャラリーデータの取得に失敗しました:", error);
-            }
-        }
-
-        /**
-         * 画面サイズに合わせて計算し、画面全体にドット絵を敷き詰める処理
-         */
         function renderTitleBgGallery(publicItems) {
             const galleryContainer = document.getElementById("title-gallery");
-            if (!galleryContainer || !publicItems.length) return;
-
-            const tileSize = 120;
-            const colCount = Math.ceil(window.innerWidth / tileSize) + 1;
-            const rowCount = Math.ceil(window.innerHeight / tileSize) + 1;
-            const totalTilesNeeded = colCount * rowCount;
-
-            let displayList = [];
-            while (displayList.length < totalTilesNeeded) {
-                displayList = displayList.concat(shuffleArray(publicItems));
-            }
-            displayList = displayList.slice(0, totalTilesNeeded);
+            if (!galleryContainer || !publicItems || !publicItems.length) return;
 
             galleryContainer.innerHTML = "";
-            displayList.forEach(item => {
+
+            const cols = 4;
+            const rows = 3;
+            const totalSlots = cols * rows;
+
+            let displayList = [];
+            while (displayList.length < totalSlots) {
+                displayList = displayList.concat(shuffleArray(publicItems));
+            }
+            displayList = displayList.slice(0, totalSlots);
+
+            const animTypes = ['float-pattern-1', 'float-pattern-2', 'float-pattern-3', 'float-pattern-4', 'float-pattern-5'];
+
+            displayList.forEach((item, index) => {
+                const imgSrc = item.imageData || item.image || item.url;
+                if (!imgSrc) return;
+
                 const card = document.createElement("div");
-                card.className = "gallery-card";
-                
+                card.className = "floating-item";
+
+                const col = index % cols;
+                const row = Math.floor(index / cols);
+
+                const cellWidth = 100 / cols;
+                const cellHeight = 100 / rows;
+
+                const randomX = col * cellWidth + 5 + Math.random() * (cellWidth - 20);
+                const randomY = row * cellHeight + 5 + Math.random() * (cellHeight - 25);
+
+                card.style.left = `${Math.max(2, Math.min(85, randomX))}%`;
+                card.style.top = `${Math.max(2, Math.min(80, randomY))}%`;
+
+                const animName = animTypes[index % animTypes.length];
+                const duration = 22 + Math.random() * 16; 
+                const delay = -(Math.random() * 30);
+
+                card.style.animation = `${animName} ${duration}s ease-in-out infinite alternate`;
+                card.style.animationDelay = `${delay}s`;
+
                 const img = document.createElement("img");
-                img.src = item.imageData;
+                img.src = imgSrc;
                 img.alt = item.word || "作品";
 
                 card.appendChild(img);
@@ -732,9 +779,6 @@
             });
         }
 
-        /**
-         * 配列をランダムに並び替えるユーティリティ関数
-         */
         function shuffleArray(array) {
             const arr = [...array];
             for (let i = arr.length - 1; i > 0; i--) {
@@ -746,7 +790,7 @@
 
         const GRID_SIZE = 32;
         let canvas, ctx, gridCanvas, gridCtx;
-        let pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+        let pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('transparent'));
         let historyStack = [];
         let redoStack = [];
         let isDrawing = false;
@@ -806,7 +850,6 @@
 
         let synth = null;
 
-        /* CUSTOM CONFIRM SYSTEM */
         let confirmCallback = null;
         function showCustomConfirm(title, message, onOk) {
             document.getElementById('confirm-title').innerHTML = `<i class="fa-solid fa-circle-question text-amber-500"></i> ${title}`;
@@ -824,9 +867,8 @@
             confirmCallback = null;
         }
 
-        /* AVATAR DRAWING SYSTEM */
         let avatarCanvas, avatarCtx, avatarGridCanvas, avatarGridCtx;
-        let avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+        let avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('transparent'));
         let targetAvatarPlayerIndex = 0;
         let isAvatarDrawing = false;
         let currentAvatarTool = 'pen';
@@ -852,7 +894,7 @@
 
         function openAvatarDrawModal(playerIndex) {
             targetAvatarPlayerIndex = playerIndex;
-            avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+            avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('transparent'));
             drawAvatarMatrix();
             drawAvatarGridOverlay();
             document.getElementById('avatar-draw-modal').classList.remove('hidden');
@@ -872,11 +914,14 @@
 
         function drawAvatarMatrix() {
             if (!avatarCtx) return;
+            avatarCtx.clearRect(0, 0, avatarCanvas.width, avatarCanvas.height);
             const cellSize = avatarCanvas.width / GRID_SIZE;
             for (let y = 0; y < GRID_SIZE; y++) {
                 for (let x = 0; x < GRID_SIZE; x++) {
-                    avatarCtx.fillStyle = avatarPixelMatrix[y][x];
-                    avatarCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    if (avatarPixelMatrix[y][x] && avatarPixelMatrix[y][x] !== 'transparent') {
+                        avatarCtx.fillStyle = avatarPixelMatrix[y][x];
+                        avatarCtx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    }
                 }
             }
         }
@@ -914,7 +959,7 @@
         }
 
         function clearAvatarCanvas() {
-            avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+            avatarPixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('transparent'));
             drawAvatarMatrix();
             playSound('click');
         }
@@ -951,7 +996,7 @@
         }
 
         function applyAvatarTool(x, y) {
-            const color = (currentAvatarTool === 'eraser') ? '#ffffff' : currentAvatarColor;
+            const color = (currentAvatarTool === 'eraser') ? 'transparent' : currentAvatarColor;
             if (avatarPixelMatrix[y][x] !== color) {
                 avatarPixelMatrix[y][x] = color;
                 drawAvatarMatrix();
@@ -1338,11 +1383,14 @@
 
         function drawMatrix() {
             if (!ctx) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             const cellSize = canvas.width / GRID_SIZE;
             for (let y = 0; y < GRID_SIZE; y++) {
                 for (let x = 0; x < GRID_SIZE; x++) {
-                    ctx.fillStyle = pixelMatrix[y][x];
-                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    if (pixelMatrix[y][x] && pixelMatrix[y][x] !== 'transparent') {
+                        ctx.fillStyle = pixelMatrix[y][x];
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    }
                 }
             }
         }
@@ -1419,8 +1467,8 @@
                     playSound('draw');
                 }
             } else if (currentTool === 'eraser') {
-                if (pixelMatrix[y][x] !== '#ffffff') {
-                    pixelMatrix[y][x] = '#ffffff';
+                if (pixelMatrix[y][x] !== 'transparent') {
+                    pixelMatrix[y][x] = 'transparent';
                     drawMatrix();
                     playSound('draw');
                 }
@@ -1471,7 +1519,7 @@
         }
 
         function clearCanvas() {
-            pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
+            pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('transparent'));
             historyStack = [];
             redoStack = [];
             drawMatrix();
@@ -1510,9 +1558,6 @@
             playSound('click');
         }
 
-        /**
-         * キャンバスのドット絵をGASに送信してDrive/Sheetに保存する
-         */
         async function sendTurnDataToGAS(imageData) {
             if (!GAS_API_URL || GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
                 console.warn("[GAS Drive] URLが未設定のため送信をスキップします。");
@@ -1548,7 +1593,6 @@
             const canvasData = canvas.toDataURL('image/png');
             const currentTurnNum = currentTurn;
 
-            // 1. ローカル履歴に格納
             const cardObj = {
                 turn: currentTurnNum,
                 player: players[activePlayerIdx],
@@ -1558,10 +1602,8 @@
             };
             historyCards.unshift(cardObj);
 
-            // 2. Google Drive (GAS) へ同期送信して完了を待機
             await sendTurnDataToGAS(canvasData);
 
-            // 3. 次のターンへの遷移処理
             currentTurn++;
             activeOrderIndex = (activeOrderIndex + 1) % selectedPlayerCount;
 
