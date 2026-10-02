@@ -197,69 +197,53 @@
             border: 3px solid #1e272e;
             box-shadow: 3px 3px 0px #000000;
         }
-        /* タイトルギャラリー全体のコンテナ */
-.title-gallery-container {
-  width: 100%;
-  max-width: 600px;
-  margin: 20px auto;
-  background: rgba(0, 0, 0, 0.4);
-  border: 2px solid #555;
-  border-radius: 8px;
-  padding: 12px;
-  box-sizing: border-box;
-}
 
-.gallery-header {
-  font-size: 0.9rem;
-  color: #aaa;
-  margin-bottom: 8px;
-  text-align: center;
-  letter-spacing: 0.05em;
-}
+        /* ★ 画面全体に敷き詰める背景ギャラリー用のスタイル */
+        .title-bg-gallery {
+            position: absolute;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            grid-auto-rows: 80px;
+            gap: 8px;
+            padding: 8px;
+            box-sizing: border-box;
+            overflow: hidden;
+            opacity: 0.85; /* バックグラウンドになじませる透過感 */
+        }
 
-/* 規則正しく並べるグリッドレイアウト */
-.title-gallery-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); /* 自動折り返しで均等配置 */
-  gap: 10px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding: 4px;
-}
+        .gallery-card {
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
 
-/* 個々のドット絵カード */
-.gallery-card {
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  background-color: #222;
-  border: 1px solid #444;
-  border-radius: 4px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease, border-color 0.2s ease;
-}
+        .gallery-card img {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            object-fit: cover;
+        }
 
-.gallery-card:hover {
-  transform: scale(1.05);
-  border-color: #00ffcc;
-}
-
-.gallery-card img {
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated; /* ドット絵のぼやけ防止 */
-  object-fit: contain;
-}
-
-.gallery-loading {
-  grid-column: 1 / -1;
-  text-align: center;
-  color: #888;
-  font-size: 0.8rem;
-  padding: 20px 0;
-}
+        /* タイトルモーダルのメインUI（前面に浮き上がる要素） */
+        .title-content-card {
+            position: relative;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(6px);
+            border: 4px solid #1e293b;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            border-radius: 24px;
+        }
         
     </style>
 </head>
@@ -430,46 +414,28 @@
     </div>
 
     <!-- FULLSCREEN TITLE SCREEN -->
-    <div id="title-modal" class="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-hidden bg-gradient-to-br from-sky-300 via-emerald-100 to-amber-100">
-        <!-- title-modal の中に配置 -->
-<div id="title-modal" class="modal active">
-  <div class="modal-content title-content">
+    <div id="title-modal" class="fixed inset-0 flex items-center justify-center p-4 z-50 overflow-hidden bg-gradient-to-br from-sky-400 via-emerald-200 to-amber-100">
+        
+        <!-- ★ 画面全体に広がる最背面ギャラリーレイヤー -->
+        <div id="title-gallery" class="title-bg-gallery"></div>
 
-    
-    <!-- ★ 追加: タイトル画面用ギャラリー表示エリア -->
-    <div class="title-gallery-container">
-      <div class="gallery-header">みんなの作品ギャラリー</div>
-      <div id="title-gallery" class="title-gallery-grid">
-        <!-- JSでここにランダム生成されたカードが挿入されます -->
-        <div class="gallery-loading">作品を読み込み中...</div>
-      </div>
-    </div>
-
-    
-  </div>
-</div>
-        <div class="w-full max-w-4xl h-full max-h-[90vh] flex flex-col items-center justify-between py-6 px-4 text-center relative z-10">
-            <div></div>
-
-            <div class="my-auto space-y-5 w-full flex flex-col items-center">
-                <div class="px-6 py-4 max-w-2xl w-full flex flex-col items-center justify-center">
-                    <div id="title-logo-wrapper" class="flex items-center justify-center">
-                        <h1 class="arcade-title-text text-3xl sm:text-5xl font-black leading-tight my-1">
-                            ドットで<br>お絵かきしりとり
-                        </h1>
-                    </div>
-
-                    <div class="mt-4 inline-block arcade-subtitle-badge px-5 py-1.5 rounded-xl text-slate-900 font-black text-xs sm:text-sm tracking-wide">
-                        描いたドット絵をつないで、みんなで高得点を目指そう！
-                    </div>
-                </div>
-
-                <button onclick="goToSetupFromTitle()" class="pixel-btn-primary btn-start-action px-10 py-4 rounded-2xl text-xl sm:text-2xl font-black tracking-widest cursor-pointer flex items-center justify-center gap-3">
-                    <i class="fa-solid fa-play text-amber-300 text-2xl"></i> ゲームをはじめる
-                </button>
+        <!-- 最前面に浮かび上がるタイトルカード -->
+        <div class="title-content-card w-full max-w-xl p-8 sm:p-10 flex flex-col items-center justify-center text-center">
+            <div id="title-logo-wrapper" class="flex items-center justify-center">
+                <h1 class="arcade-title-text text-4xl sm:text-6xl font-black leading-tight my-1">
+                    ドットで<br>お絵かきしりとり
+                </h1>
             </div>
 
-            <footer class="text-xs text-slate-600 font-bold tracking-widest pt-2 opacity-80">
+            <div class="mt-4 inline-block arcade-subtitle-badge px-6 py-2 rounded-xl text-slate-900 font-black text-xs sm:text-base tracking-wide">
+                描いたドット絵をつないで、みんなで高得点を目指そう！
+            </div>
+
+            <button onclick="goToSetupFromTitle()" class="pixel-btn-primary btn-start-action mt-8 px-10 py-4 rounded-2xl text-xl sm:text-2xl font-black tracking-widest cursor-pointer flex items-center justify-center gap-3">
+                <i class="fa-solid fa-play text-amber-300 text-2xl"></i> ゲームをはじめる
+            </button>
+
+            <footer class="text-[11px] text-slate-600 font-bold tracking-widest mt-6 opacity-80">
                 &copy; 2026 hiraku-designs DOTS PROJECTS all rights reserved.
             </footer>
         </div>
@@ -701,70 +667,85 @@
         // ==========================================
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbyPIOujFY4htzqnRY4rht8AeOheRbIO4ZFEodRmOrwIffyAjhGdNCJrbBj10z328cw7yQ/exec';
 
+        // 画面読み込み時にギャラリーを取得して表示
+        document.addEventListener("DOMContentLoaded", () => {
+            loadTitleGallery();
+        });
 
-// 画面読み込み時にギャラリーを取得して表示
-document.addEventListener("DOMContentLoaded", () => {
-  loadTitleGallery();
-});
+        // 画面リサイズ時にも敷き詰め枚数を再計算
+        window.addEventListener("resize", () => {
+            if (window.cachedGalleryItems) {
+                renderTitleBgGallery(window.cachedGalleryItems);
+            }
+        });
 
-/**
- * GASから作品データを取得してタイトル画面にランダム表示する
- */
-async function loadTitleGallery() {
-  const galleryContainer = document.getElementById("title-gallery");
-  if (!galleryContainer) return;
+        /**
+         * GASから作品データを取得してタイトル背景いっぱいに敷き詰める
+         */
+        async function loadTitleGallery() {
+            const galleryContainer = document.getElementById("title-gallery");
+            if (!galleryContainer) return;
 
-  try {
-    // 1. GAS経由でスプレッドシートの全データを取得 (GETリクエスト)
-    const response = await fetch(`${GAS_API_URL}?action=getGallery`);
-    const data = await response.json(); // データ構造例: [{ imageData: '...', status: '公開', title: '...' }]
+            try {
+                const response = await fetch(`${GAS_API_URL}?action=getGallery`);
+                const data = await response.json();
 
-    // 2. ステータスが「公開」のものだけにフィルタリング
-    const publicItems = data.filter(item => item.status === "公開");
+                const publicItems = data.filter(item => item.status === "公開");
 
-    if (publicItems.length === 0) {
-      galleryContainer.innerHTML = `<div class="gallery-loading">公開中の作品がまだありません</div>`;
-      return;
-    }
+                if (publicItems.length === 0) return;
 
-    // 3. 配列をランダムにシャッフル (フィッシャー–イェーツの手法)
-    const shuffledItems = shuffleArray(publicItems);
+                window.cachedGalleryItems = publicItems;
+                renderTitleBgGallery(publicItems);
 
-    // 4. HTMLに描画
-    galleryContainer.innerHTML = ""; // ローディング表示のクリア
-    shuffledItems.forEach(item => {
-      const card = document.createElement("div");
-      card.className = "gallery-card";
-      
-      const img = document.createElement("img");
-      img.src = item.imageData; // Base64画像文字列
-      img.alt = item.word || "作品";
-      img.title = item.word ? `「${item.word}」` : "";
+            } catch (error) {
+                console.error("ギャラリーデータの取得に失敗しました:", error);
+            }
+        }
 
-      card.appendChild(img);
-      galleryContainer.appendChild(card);
-    });
+        /**
+         * 画面サイズに合わせて計算し、画面全体にドット絵を敷き詰める処理
+         */
+        function renderTitleBgGallery(publicItems) {
+            const galleryContainer = document.getElementById("title-gallery");
+            if (!galleryContainer || !publicItems.length) return;
 
-  } catch (error) {
-    console.error("ギャラリーデータの取得に失敗しました:", error);
-    galleryContainer.innerHTML = `<div class="gallery-loading">読み込みエラーが発生しました</div>`;
-  }
-}
+            const tileSize = 80;
+            const colCount = Math.ceil(window.innerWidth / tileSize) + 1;
+            const rowCount = Math.ceil(window.innerHeight / tileSize) + 1;
+            const totalTilesNeeded = colCount * rowCount;
 
-/**
- * 配列をランダムに並び替えるユーティリティ関数
- */
-function shuffleArray(array) {
-  const arr = [...array];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}    
+            let displayList = [];
+            while (displayList.length < totalTilesNeeded) {
+                displayList = displayList.concat(shuffleArray(publicItems));
+            }
+            displayList = displayList.slice(0, totalTilesNeeded);
 
+            galleryContainer.innerHTML = "";
+            displayList.forEach(item => {
+                const card = document.createElement("div");
+                card.className = "gallery-card";
+                
+                const img = document.createElement("img");
+                img.src = item.imageData;
+                img.alt = item.word || "作品";
 
-        
+                card.appendChild(img);
+                galleryContainer.appendChild(card);
+            });
+        }
+
+        /**
+         * 配列をランダムに並び替えるユーティリティ関数
+         */
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }    
+
         const GRID_SIZE = 32;
         let canvas, ctx, gridCanvas, gridCtx;
         let pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
