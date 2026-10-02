@@ -1386,39 +1386,30 @@
             playSound('click');
         }
 
-        /**
-         * 毎ターンのデータをGoogle Drive (GAS) へバックグラウンド送信する処理
-         */
-        async function sendTurnDataToGAS(turnNumber, pMatrix, canvasImageBase64, playerName) {
-            if (!GAS_API_URL) return;
+        // Webアプリ側の送信処理の例
+async function sendTurnDataToGAS(data) {
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzDDmmuf9vDh-adGps4Qs718jylMg113HX.../exec";
 
-            const payload = {
-                turn: turnNumber,
-                player: playerName,
-                pixelMatrix: pMatrix,       // 32x32のカラーコード2次元配列
-                imageData: canvasImageBase64 // 画質保持・プレビュー用 Base64
-            };
+  try {
+    const response = await fetch(GAS_URL, {
+      method: "POST",
+      // 【重要1】Content-Type は指定しない、または text/plain にする (CORSプリフライト回避のため)
+      headers: {
+        "Content-Type": "text/plain",
+      },
+      // 【重要2】GASのリダイレクトを自動追従させる
+      redirect: "follow",
+      body: JSON.stringify(data),
+    });
 
-            try {
-                // CORS回避のため text/plain で送信
-                const response = await fetch(GAS_API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8'
-                    },
-                    body: JSON.stringify(payload)
-                });
-                
-                const result = await response.json();
-                if (result.status === 'success') {
-                    console.log(`[GAS Drive] Turn ${turnNumber} 保存完了 (File: ${result.fileName})`);
-                } else {
-                    console.error('[GAS Drive] エラー:', result.message);
-                }
-            } catch (error) {
-                console.error('[GAS Drive] 通信エラー:', error);
-            }
-        }
+    const result = await response.json();
+    console.log("送信成功:", result);
+    return result;
+
+  } catch (error) {
+    console.error("[GAS Drive] 通信エラー:", error);
+  }
+}
 
         function submitTurn() {
             const activePlayerIdx = playOrder[activeOrderIndex];
