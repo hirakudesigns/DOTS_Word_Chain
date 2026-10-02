@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -1514,37 +1513,41 @@
         }
 
         /**
-         * Turnデータ（Base64画像）をGASに送信する関数
-         * @param {string} imageData - canvas.toDataURL() で取得したBase64文字列
+         * キャンバスのドット絵をGASに送信してDrive/Sheetに保存する
          */
         async function sendTurnDataToGAS(imageData) {
             if (!GAS_API_URL || GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
                 console.warn("[GAS Drive] URLが未設定のため送信をスキップします。");
-                return;
+                return null;
             }
 
             try {
                 const response = await fetch(GAS_API_URL, {
-                    method: "POST",
+                    method: 'POST',
                     headers: {
-                        "Content-Type": "text/plain", // CORSプリフライト回避用
+                        'Content-Type': 'text/plain;charset=utf-8', // GASのCORS制約を回避するためtext/plain推奨
                     },
-                    redirect: "follow",
-                    body: JSON.stringify({ image: imageData }),
+                    body: JSON.stringify({
+                        image: imageData
+                    })
                 });
 
                 const result = await response.json();
-                console.log("[GAS Drive] 送信成功:", result);
+                if (result.status === 'success') {
+                    console.log('保存成功:', result.url);
+                } else {
+                    console.error('保存失敗:', result.message);
+                }
                 return result;
-
             } catch (error) {
-                console.error("[GAS Drive] 通信エラー:", error);
+                console.error('通信エラー:', error);
+                return null;
             }
         }
 
-        function submitTurn() {
+        async function submitTurn() {
             const activePlayerIdx = playOrder[activeOrderIndex];
-            const canvasData = canvas.toDataURL();
+            const canvasData = canvas.toDataURL('image/png');
             const currentTurnNum = currentTurn;
 
             // 1. ローカル履歴に格納
@@ -1557,8 +1560,8 @@
             };
             historyCards.unshift(cardObj);
 
-            // 2. Google Drive (GAS) へバックグラウンド非同期送信
-            sendTurnDataToGAS(canvasData);
+            // 2. Google Drive (GAS) へ同期送信して完了を待機
+            await sendTurnDataToGAS(canvasData);
 
             // 3. 次のターンへの遷移処理
             currentTurn++;
