@@ -618,7 +618,7 @@
         // ==========================================
         // GAS API 設定領域
         // ==========================================
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbzDDmmuf9vDh-adGps4Qs718jylMg113HX442k2s3UzX-LwStNjVx4PicQPCyX6qeadWA/exec';
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby-1_UKK0eP5FBR02kv0kqO5LJsUdngxA98IEtCm6JP0Qltp6bQ8sbKDLBOXNLEDx9zDw/exec';
 
         const GRID_SIZE = 32;
         let canvas, ctx, gridCanvas, gridCtx;
@@ -1386,36 +1386,39 @@
             playSound('click');
         }
 
-        // Webアプリ側の送信処理の例
-async function sendTurnDataToGAS(data) {
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbzDDmmuf9vDh-adGps4Qs718jylMg113HX.../exec";
+        /**
+         * Turnデータ（Base64画像）をGASに送信する関数
+         * @param {string} imageData - canvas.toDataURL() で取得したBase64文字列
+         */
+        async function sendTurnDataToGAS(imageData) {
+            if (!GAS_API_URL || GAS_API_URL.includes("YOUR_DEPLOYMENT_ID")) {
+                console.warn("[GAS Drive] URLが未設定のため送信をスキップします。");
+                return;
+            }
 
-  try {
-    const response = await fetch(GAS_URL, {
-      method: "POST",
-      // 【重要1】Content-Type は指定しない、または text/plain にする (CORSプリフライト回避のため)
-      headers: {
-        "Content-Type": "text/plain",
-      },
-      // 【重要2】GASのリダイレクトを自動追従させる
-      redirect: "follow",
-      body: JSON.stringify(data),
-    });
+            try {
+                const response = await fetch(GAS_API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "text/plain", // CORSプリフライト回避用
+                    },
+                    redirect: "follow",
+                    body: JSON.stringify({ image: imageData }),
+                });
 
-    const result = await response.json();
-    console.log("送信成功:", result);
-    return result;
+                const result = await response.json();
+                console.log("[GAS Drive] 送信成功:", result);
+                return result;
 
-  } catch (error) {
-    console.error("[GAS Drive] 通信エラー:", error);
-  }
-}
+            } catch (error) {
+                console.error("[GAS Drive] 通信エラー:", error);
+            }
+        }
 
         function submitTurn() {
             const activePlayerIdx = playOrder[activeOrderIndex];
             const canvasData = canvas.toDataURL();
             const currentTurnNum = currentTurn;
-            const activePlayerName = players[activePlayerIdx].name;
 
             // 1. ローカル履歴に格納
             const cardObj = {
@@ -1428,7 +1431,7 @@ async function sendTurnDataToGAS(data) {
             historyCards.unshift(cardObj);
 
             // 2. Google Drive (GAS) へバックグラウンド非同期送信
-            sendTurnDataToGAS(currentTurnNum, pixelMatrix, canvasData, activePlayerName);
+            sendTurnDataToGAS(canvasData);
 
             // 3. 次のターンへの遷移処理
             currentTurn++;
