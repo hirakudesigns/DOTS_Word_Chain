@@ -206,32 +206,30 @@
             height: 100vh;
             z-index: 1;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            grid-auto-rows: 80px;
-            gap: 8px;
-            padding: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            grid-auto-rows: 120px;
+            gap: 12px;
+            padding: 12px;
             box-sizing: border-box;
             overflow: hidden;
-            opacity: 0.85; /* バックグラウンドになじませる透過感 */
+            opacity: 0.9;
         }
 
         .gallery-card {
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.15);
-            border-radius: 6px;
+            background-color: transparent;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .gallery-card img {
             width: 100%;
             height: 100%;
             image-rendering: pixelated;
-            object-fit: cover;
+            object-fit: contain;
         }
 
         /* タイトルモーダルのメインUI（前面に浮き上がる要素） */
@@ -709,7 +707,7 @@
             const galleryContainer = document.getElementById("title-gallery");
             if (!galleryContainer || !publicItems.length) return;
 
-            const tileSize = 80;
+            const tileSize = 120;
             const colCount = Math.ceil(window.innerWidth / tileSize) + 1;
             const rowCount = Math.ceil(window.innerHeight / tileSize) + 1;
             const totalTilesNeeded = colCount * rowCount;
@@ -1525,7 +1523,7 @@
                 const response = await fetch(GAS_API_URL, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'text/plain;charset=utf-8', // GASのCORS制約を回避するためtext/plain推奨
+                        'Content-Type': 'text/plain;charset=utf-8',
                     },
                     body: JSON.stringify({
                         image: imageData
