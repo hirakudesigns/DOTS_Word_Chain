@@ -703,6 +703,70 @@
         // ==========================================
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbxyZkJ2e4ulvAsBqxDlxG1jT9nfPjBJ9CJqB579zkrWFIW-lx2VR8WqPbXizsIvtoEGRg/exec';
 
+
+// 画面読み込み時にギャラリーを取得して表示
+document.addEventListener("DOMContentLoaded", () => {
+  loadTitleGallery();
+});
+
+/**
+ * GASから作品データを取得してタイトル画面にランダム表示する
+ */
+async function loadTitleGallery() {
+  const galleryContainer = document.getElementById("title-gallery");
+  if (!galleryContainer) return;
+
+  try {
+    // 1. GAS経由でスプレッドシートの全データを取得 (GETリクエスト)
+    const response = await fetch(`${GAS_API_URL}?action=getGallery`);
+    const data = await response.json(); // データ構造例: [{ imageData: '...', status: '公開', title: '...' }]
+
+    // 2. ステータスが「公開」のものだけにフィルタリング
+    const publicItems = data.filter(item => item.status === "公開");
+
+    if (publicItems.length === 0) {
+      galleryContainer.innerHTML = `<div class="gallery-loading">公開中の作品がまだありません</div>`;
+      return;
+    }
+
+    // 3. 配列をランダムにシャッフル (フィッシャー–イェーツの手法)
+    const shuffledItems = shuffleArray(publicItems);
+
+    // 4. HTMLに描画
+    galleryContainer.innerHTML = ""; // ローディング表示のクリア
+    shuffledItems.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "gallery-card";
+      
+      const img = document.createElement("img");
+      img.src = item.imageData; // Base64画像文字列
+      img.alt = item.word || "作品";
+      img.title = item.word ? `「${item.word}」` : "";
+
+      card.appendChild(img);
+      galleryContainer.appendChild(card);
+    });
+
+  } catch (error) {
+    console.error("ギャラリーデータの取得に失敗しました:", error);
+    galleryContainer.innerHTML = `<div class="gallery-loading">読み込みエラーが発生しました</div>`;
+  }
+}
+
+/**
+ * 配列をランダムに並び替えるユーティリティ関数
+ */
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}    
+
+
+        
         const GRID_SIZE = 32;
         let canvas, ctx, gridCanvas, gridCtx;
         let pixelMatrix = Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill('#ffffff'));
