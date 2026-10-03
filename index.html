@@ -685,12 +685,15 @@
 
             <div id="final-gallery" class="flex-1 my-1 overflow-y-auto grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 bg-amber-50/60 rounded-lg border-2 border-amber-200"></div>
 
-            <div class="flex flex-col sm:flex-row gap-2 mt-2">
-                <button onclick="restartGameSameSettings()" class="pixel-btn-success flex-1 py-2 rounded-lg text-sm font-bold">
-                    <i class="fa-solid fa-rotate-right mr-1"></i> もう一度遊ぶ
+            <div class="grid grid-cols-3 gap-2 mt-2">
+                <button onclick="restartGameSameSettings()" class="pixel-btn-success py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-rotate-right"></i> もう一度遊ぶ
                 </button>
-                <button onclick="openSetupModal()" class="pixel-box-interactive flex-1 py-2 bg-slate-200 rounded-lg text-sm font-bold text-slate-700">
-                    <i class="fa-solid fa-gear mr-1"></i> 設定を変えて遊ぶ
+                <button onclick="openSetupModal()" class="pixel-box-interactive py-2 bg-slate-200 rounded-lg text-xs sm:text-sm font-bold text-slate-700 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-gear"></i> 設定を変える
+                </button>
+                <button onclick="openTitleModal()" class="pixel-box-interactive py-2 bg-amber-200 rounded-lg text-xs sm:text-sm font-bold text-amber-900 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-house"></i> タイトルへもどる
                 </button>
             </div>
         </div>
@@ -720,7 +723,6 @@
             initCanvas();
             initAvatarCanvas();
             renderPalette();
-
         });
 
         window.addEventListener("resize", () => {
@@ -1375,6 +1377,7 @@
 
         function restartGameSameSettings() {
             players.forEach(p => p.score = 0);
+            document.getElementById('clear-modal').classList.add('hidden');
             startOrderShufflePhase();
         }
 
@@ -1641,7 +1644,6 @@
             };
             historyCards.unshift(cardObj);
 
-            // キャッシュ用配列を更新しタイトル画面の背景ギャラリーにも即時反映
             window.cachedGalleryItems = historyCards;
             loadTitleGallery();
 
@@ -1733,7 +1735,7 @@
         }
 
         function startJudgmentPhase() {
-            judgmentIndex = historyCards.length - 1; // 古い順（最初のアート）から判定
+            judgmentIndex = historyCards.length - 1;
             totalScore = 0;
             document.getElementById('judgment-modal').classList.remove('hidden');
             renderJudgmentCard();
@@ -1785,7 +1787,7 @@
             }
 
             const successCount = historyCards.filter(c => c.status === 'success' || c.status === 'bonus').length;
-            const successRate = Math.round((successCount / historyCards.length) * 100);
+            const successRate = historyCards.length > 0 ? Math.round((successCount / historyCards.length) * 100) : 0;
 
             document.getElementById('final-score-display').innerText = totalScore;
             document.getElementById('final-rate-display').innerText = `${successRate}%`;
@@ -1798,7 +1800,6 @@
 
             document.getElementById('final-title-display').innerText = titleStr;
 
-            // Render player rankings
             const rankingContainer = document.getElementById('player-ranking-list');
             rankingContainer.innerHTML = '';
             const sortedPlayers = [...players].slice(0, selectedPlayerCount).sort((a, b) => b.score - a.score);
@@ -1817,7 +1818,6 @@
                 rankingContainer.appendChild(rankCard);
             });
 
-            // Render final gallery
             const galleryContainer = document.getElementById('final-gallery');
             galleryContainer.innerHTML = '';
             historyCards.slice().reverse().forEach(card => {
