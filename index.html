@@ -1749,14 +1749,14 @@ function renderTitleBgGallery(publicItems) {
         }
 
         function startJudgmentPhase() {
-            judgmentIndex = historyCards.length - 1;
+            judgmentIndex = 0; // 1ターン目（インデックス0）からスタートするように変更
             totalScore = 0;
             document.getElementById('judgment-modal').classList.remove('hidden');
             renderJudgmentCard();
         }
 
         function renderJudgmentCard() {
-            if (judgmentIndex < 0) {
+            if (judgmentIndex >= historyCards.length) { // 全てのカードの審査が終わったら終了
                 document.getElementById('judgment-modal').classList.add('hidden');
                 showFinalResultModal();
                 return;
@@ -1789,7 +1789,7 @@ function renderTitleBgGallery(publicItems) {
                 playSound('wrong');
             }
 
-            judgmentIndex--;
+            judgmentIndex++; // 次のターン（インデックスをインクリメント）へ進むように変更
             renderJudgmentCard();
         }
 
@@ -1834,7 +1834,7 @@ function renderTitleBgGallery(publicItems) {
 
             const galleryContainer = document.getElementById('final-gallery');
             galleryContainer.innerHTML = '';
-            historyCards.slice().reverse().forEach(card => {
+            historyCards.forEach(card => { // 最終ギャラリーも1ターン目から順番に表示するように変更
                 const item = document.createElement('div');
                 item.className = "pixel-box p-1.5 bg-white rounded-lg flex flex-col items-center";
                 item.innerHTML = `
