@@ -703,55 +703,50 @@
     <script>
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbx1hUuYGs-Tz_HBp-8s5qv6QV3EXkA71VSSRqpBpVpFUD4yrsyI0Bq32d3PSh5deKA/exec';
 
-// 初期フォールバック用のデータ（通信失敗時やデータが空のときに使用）
+// 初期フォールバック用のデータ
 window.cachedGalleryItems = [
     { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><circle cx="8" cy="8" r="6" fill="#ffeaa7"/></svg>'), word: "りんご" },
     { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="4" y="4" width="8" height="8" fill="#55efc4"/></svg>'), word: "ごりら" },
     { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ffeaa7"/><path d="M4 12 L8 4 L12 12 Z" fill="#e17055"/></svg>'), word: "らっぱ" }
 ];
 
-/**
- * ページ読み込み時の処理
- */
-document.addEventListener("DOMContentLoaded", async () => {
-    // 1. スプレッドシートから最新の「公開」データを取得してキャッシュを更新する
-    await fetchPublicGalleryItems();
-
-    // 2. ギャラリーおよび各キャンバスの初期化
-    loadTitleGallery();
+document.addEventListener("DOMContentLoaded", () => {
+    // まずキャンバスなどの基本初期化を走らせる
     initCanvas();
     initAvatarCanvas();
     renderPalette();
+
+    // スプレッドシートからのデータ取得を試みて、成功したらギャラリーを強制再描画する
+    fetchAndRenderGallery();
 });
 
 /**
- * GASのウェブアプリからステータス「公開」の画像を取得する関数
+ * データを取得してギャラリーを描画する独立関数
  */
-async function fetchPublicGalleryItems() {
-    if (!GAS_API_URL) return;
-    try {
-        const response = await fetch(GAS_API_URL);
-        const data = await response.json();
-        
-        // GAS側が返す { status: "success", images: [...] } の形式に対応
-        if (data.status === "success" && Array.isArray(data.images) && data.images.length > 0) {
-            window.cachedGalleryItems = data.images.map(item => ({
-                imageData: item.imageData,           // C列：画像プレビューURL
-                word: item.fileName || "作品"         // B列：ファイル名（alt属性などに利用）
-            }));
-            console.log("スプレッドシートから公開データを取得しました:", window.cachedGalleryItems);
+async function fetchAndRenderGallery() {
+    if (GAS_API_URL) {
+        try {
+            const response = await fetch(GAS_API_URL);
+            const data = await response.json();
+            
+            console.log("GASレスポンス:", data); // ← ブラウザのコンソールで中身を確認できます
+
+            if (data.status === "success" && Array.isArray(data.images) && data.images.length > 0) {
+                window.cachedGalleryItems = data.images.map(item => ({
+                    imageData: item.imageData,
+                    word: item.fileName || "作品"
+                }));
+            }
+        } catch (err) {
+            console.error("スプレッドシートからのデータ取得に失敗しました:", err);
         }
-    } catch (err) {
-        console.error("スプレッドシートからのデータ取得に失敗しました。デフォルトデータを使用します。", err);
     }
+    // 取得できてもできなくても、キャッシュ（またはフォールバック）を元に描画を実行
+    loadTitleGallery();
 }
 
 function loadTitleGallery() {
-    const sampleItems = window.cachedGalleryItems && window.cachedGalleryItems.length > 0 ? window.cachedGalleryItems : [
-        { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><circle cx="8" cy="8" r="6" fill="#ffeaa7"/></svg>') },
-        { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="4" y="4" width="8" height="8" fill="#55efc4"/></svg>') }
-    ];
-    renderTitleBgGallery(sampleItems);
+    renderTitleBgGallery(window.cachedGalleryItems);
 }
 
 window.addEventListener("resize", () => {
@@ -812,7 +807,6 @@ function renderTitleBgGallery(publicItems) {
         galleryContainer.appendChild(card);
     });
 }
-
         function shuffleArray(array) {
             const arr = [...array];
             for (let i = arr.length - 1; i > 0; i--) {
