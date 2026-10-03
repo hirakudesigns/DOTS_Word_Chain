@@ -1627,45 +1627,47 @@
             }
         }
 
-        async function submitTurn() {
-            if (isCanvasLocked) return;
-            stopTimer();
+        // submitTurn 関数の全文（そのまま貼り付けてご使用いただけます）
+async function submitTurn() {
+    // ボタンの二重クリック防止やローディング表示があればここに追加
+    
+    // キャンバスから画像データを取得（例：data:image/png;base64,... 形式）
+    const canvasData = canvas.toDataURL('image/png'); 
+    
+    // ファイル名やステータスの取得（既存のロジックに合わせて調整してください）
+    const fileName = document.getElementById('fileNameInput')?.value || 'dot_art.png';
+    const status = "公開"; // 必要に応じて変更
 
-            const activePlayerIdx = playOrder[activeOrderIndex];
-            const canvasData = canvas.toDataURL('image/png');
-            const currentTurnNum = currentTurn;
+    // GAS側が受け取るキー名 "image" に修正したペイロード
+    const payload = {
+        fileName: fileName,
+        image: canvasData, // ← "image" キーに変更済み
+        status: status
+    };
 
-            const cardObj = {
-                turn: currentTurnNum,
-                player: players[activePlayerIdx],
-                imageData: canvasData,
-                status: null,
-                scoreEarned: 0
-            };
-            historyCards.unshift(cardObj);
-
-            window.cachedGalleryItems = historyCards;
-            loadTitleGallery();
-
-            await sendTurnDataToGAS(canvasData);
-
-            currentTurn++;
-            activeOrderIndex = (activeOrderIndex + 1) % selectedPlayerCount;
-
-            isCanvasLocked = false;
-            clearCanvas();
-            updateTurnDisplays();
-            renderPlayerHeader();
-            renderHistoryCards();
-
-            if (currentTurn > maxTurns) {
-                triggerGameFinishSequence();
-            } else {
-                playSound('turn');
-                startTimer();
+    try {
+        const response = await fetch(WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8' // GASの doPost(e) で受け取るための一般的な設定
             }
-        }
+        });
 
+        const result = await response.json();
+        
+        if (result.success || result.status === 'success') {
+            console.log('送信成功:', result);
+            alert('保存に成功しました！');
+        } else {
+            console.error('サーバーエラー:', result);
+            alert('保存に失敗しました。');
+        }
+    } catch (error) {
+        console.error('通信エラー:', error);
+        alert('通信エラーが発生しました。');
+    }
+}
         function renderHistoryCards() {
             const container = document.getElementById('cards-history-list');
             if (!container) return;
