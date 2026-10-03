@@ -701,87 +701,117 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbw83OwgGLc2eWkeyZgqaadPi7O5zicLuEYWCjy0_iQDnIUAltEIReOodPB9L9dWdm8O/exec';
+        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbx1hUuYGs-Tz_HBp-8s5qv6QV3EXkA71VSSRqpBpVpFUD4yrsyI0Bq32d3PSh5deKA/exec';
 
-        window.cachedGalleryItems = [
-            { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><circle cx="8" cy="8" r="6" fill="#ffeaa7"/></svg>'), word: "りんご" },
-            { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="4" y="4" width="8" height="8" fill="#55efc4"/></svg>'), word: "ごりら" },
-            { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ffeaa7"/><path d="M4 12 L8 4 L12 12 Z" fill="#e17055"/></svg>'), word: "らっぱ" }
-        ];
+// 初期フォールバック用のデータ（通信失敗時やデータが空のときに使用）
+window.cachedGalleryItems = [
+    { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><circle cx="8" cy="8" r="6" fill="#ffeaa7"/></svg>'), word: "りんご" },
+    { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="4" y="4" width="8" height="8" fill="#55efc4"/></svg>'), word: "ごりら" },
+    { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ffeaa7"/><path d="M4 12 L8 4 L12 12 Z" fill="#e17055"/></svg>'), word: "らっぱ" }
+];
 
-        function loadTitleGallery() {
-            const sampleItems = window.cachedGalleryItems && window.cachedGalleryItems.length > 0 ? window.cachedGalleryItems : [
-                { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><circle cx="8" cy="8" r="6" fill="#ffeaa7"/></svg>') },
-                { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="4" y="4" width="8" height="8" fill="#55efc4"/></svg>') }
-            ];
-            renderTitleBgGallery(sampleItems);
+/**
+ * ページ読み込み時の処理
+ */
+document.addEventListener("DOMContentLoaded", async () => {
+    // 1. スプレッドシートから最新の「公開」データを取得してキャッシュを更新する
+    await fetchPublicGalleryItems();
+
+    // 2. ギャラリーおよび各キャンバスの初期化
+    loadTitleGallery();
+    initCanvas();
+    initAvatarCanvas();
+    renderPalette();
+});
+
+/**
+ * GASのウェブアプリからステータス「公開」の画像を取得する関数
+ */
+async function fetchPublicGalleryItems() {
+    if (!GAS_API_URL) return;
+    try {
+        const response = await fetch(GAS_API_URL);
+        const data = await response.json();
+        
+        // GAS側が返す { status: "success", images: [...] } の形式に対応
+        if (data.status === "success" && Array.isArray(data.images) && data.images.length > 0) {
+            window.cachedGalleryItems = data.images.map(item => ({
+                imageData: item.imageData,           // C列：画像プレビューURL
+                word: item.fileName || "作品"         // B列：ファイル名（alt属性などに利用）
+            }));
+            console.log("スプレッドシートから公開データを取得しました:", window.cachedGalleryItems);
         }
+    } catch (err) {
+        console.error("スプレッドシートからのデータ取得に失敗しました。デフォルトデータを使用します。", err);
+    }
+}
 
-        document.addEventListener("DOMContentLoaded", () => {
-            loadTitleGallery();
-            initCanvas();
-            initAvatarCanvas();
-            renderPalette();
-        });
+function loadTitleGallery() {
+    const sampleItems = window.cachedGalleryItems && window.cachedGalleryItems.length > 0 ? window.cachedGalleryItems : [
+        { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><circle cx="8" cy="8" r="6" fill="#ffeaa7"/></svg>') },
+        { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="4" y="4" width="8" height="8" fill="#55efc4"/></svg>') }
+    ];
+    renderTitleBgGallery(sampleItems);
+}
 
-        window.addEventListener("resize", () => {
-            if (window.cachedGalleryItems) {
-                renderTitleBgGallery(window.cachedGalleryItems);
-            }
-        });
+window.addEventListener("resize", () => {
+    if (window.cachedGalleryItems) {
+        renderTitleBgGallery(window.cachedGalleryItems);
+    }
+});
 
-        function renderTitleBgGallery(publicItems) {
-            const galleryContainer = document.getElementById("title-gallery");
-            if (!galleryContainer || !publicItems || !publicItems.length) return;
+function renderTitleBgGallery(publicItems) {
+    const galleryContainer = document.getElementById("title-gallery");
+    if (!galleryContainer || !publicItems || !publicItems.length) return;
 
-            galleryContainer.innerHTML = "";
+    galleryContainer.innerHTML = "";
 
-            const cols = 4;
-            const rows = 3;
-            const totalSlots = cols * rows;
+    const cols = 4;
+    const rows = 3;
+    const totalSlots = cols * rows;
 
-            let displayList = [];
-            while (displayList.length < totalSlots) {
-                displayList = displayList.concat(shuffleArray(publicItems));
-            }
-            displayList = displayList.slice(0, totalSlots);
+    let displayList = [];
+    while (displayList.length < totalSlots) {
+        displayList = displayList.concat(shuffleArray(publicItems));
+    }
+    displayList = displayList.slice(0, totalSlots);
 
-            const animTypes = ['float-pattern-1', 'float-pattern-2', 'float-pattern-3', 'float-pattern-4', 'float-pattern-5'];
+    const animTypes = ['float-pattern-1', 'float-pattern-2', 'float-pattern-3', 'float-pattern-4', 'float-pattern-5'];
 
-            displayList.forEach((item, index) => {
-                const imgSrc = item.imageData || item.image || item.url;
-                if (!imgSrc) return;
+    displayList.forEach((item, index) => {
+        const imgSrc = item.imageData || item.image || item.url;
+        if (!imgSrc) return;
 
-                const card = document.createElement("div");
-                card.className = "floating-item";
+        const card = document.createElement("div");
+        card.className = "floating-item";
 
-                const col = index % cols;
-                const row = Math.floor(index / cols);
+        const col = index % cols;
+        const row = Math.floor(index / cols);
 
-                const cellWidth = 100 / cols;
-                const cellHeight = 100 / rows;
+        const cellWidth = 100 / cols;
+        const cellHeight = 100 / rows;
 
-                const randomX = col * cellWidth + 5 + Math.random() * (cellWidth - 20);
-                const randomY = row * cellHeight + 5 + Math.random() * (cellHeight - 25);
+        const randomX = col * cellWidth + 5 + Math.random() * (cellWidth - 20);
+        const randomY = row * cellHeight + 5 + Math.random() * (cellHeight - 25);
 
-                card.style.left = `${Math.max(2, Math.min(85, randomX))}%`;
-                card.style.top = `${Math.max(2, Math.min(80, randomY))}%`;
+        card.style.left = `${Math.max(2, Math.min(85, randomX))}%`;
+        card.style.top = `${Math.max(2, Math.min(80, randomY))}%`;
 
-                const animName = animTypes[index % animTypes.length];
-                const duration = 22 + Math.random() * 16; 
-                const delay = -(Math.random() * 30);
+        const animName = animTypes[index % animTypes.length];
+        const duration = 22 + Math.random() * 16; 
+        const delay = -(Math.random() * 30);
 
-                card.style.animation = `${animName} ${duration}s ease-in-out infinite alternate`;
-                card.style.animationDelay = `${delay}s`;
+        card.style.animation = `${animName} ${duration}s ease-in-out infinite alternate`;
+        card.style.animationDelay = `${delay}s`;
 
-                const img = document.createElement("img");
-                img.src = imgSrc;
-                img.alt = item.word || "作品";
+        const img = document.createElement("img");
+        img.src = imgSrc;
+        img.alt = item.word || "作品";
 
-                card.appendChild(img);
-                galleryContainer.appendChild(card);
-            });
-        }
+        card.appendChild(img);
+        galleryContainer.appendChild(card);
+    });
+}
 
         function shuffleArray(array) {
             const arr = [...array];
