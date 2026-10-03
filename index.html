@@ -720,6 +720,21 @@
             initCanvas();
             initAvatarCanvas();
             renderPalette();
+
+            async function fetchPublicGalleryImages() {
+    if (!GAS_API_URL || GAS_API_URL.includes("AKfycbz...")) return;
+    try {
+        const response = await fetch(GAS_API_URL);
+        const data = await response.json();
+        if (data && data.status === "success" && data.images && data.images.length > 0) {
+            window.cachedGalleryItems = data.images;
+            loadTitleGallery(); // タイトル背景ギャラリーを再描画
+        }
+    } catch (e) {
+        console.error("ギャラリー画像の取得に失敗しました:", e);
+    }
+}
+
         });
 
         window.addEventListener("resize", () => {
