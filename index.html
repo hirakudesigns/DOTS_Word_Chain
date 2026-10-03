@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -485,11 +486,10 @@
             </h2>
             <p class="text-center text-xs text-slate-500 mb-5 font-bold">描いたドット絵をつないで、みんなで高得点を目指そう！</p>
 
-            <!-- 1. Number of Players -->
+            <!-- 1. Number of Players (2-4 players) -->
             <div class="mb-4">
-                <label class="block text-xs font-black text-slate-700 mb-1.5">1. プレイ人数 (最大4人)</label>
-                <div class="grid grid-cols-4 gap-2">
-                    <button onclick="setPlayerCount(1)" class="player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-slate-700 bg-white" data-count="1">1人</button>
+                <label class="block text-xs font-black text-slate-700 mb-1.5">1. プレイ人数 (2〜4人)</label>
+                <div class="grid grid-cols-3 gap-2">
                     <button onclick="setPlayerCount(2)" class="player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-slate-700 bg-white" data-count="2">2人</button>
                     <button onclick="setPlayerCount(3)" class="player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-slate-700 bg-white" data-count="3">3人</button>
                     <button onclick="setPlayerCount(4)" class="player-count-btn pixel-box-interactive py-2 text-center rounded font-black text-white bg-pink-500 border-slate-700" data-count="4">4人</button>
@@ -703,7 +703,6 @@
     <script>
         const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbw83OwgGLc2eWkeyZgqaadPi7O5zicLuEYWCjy0_iQDnIUAltEIReOodPB9L9dWdm8O/exec';
 
-        // プレースホルダーまたはキャッシュされたギャラリー用サンプルデータ
         window.cachedGalleryItems = [
             { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#ff7675"/><circle cx="8" cy="8" r="6" fill="#ffeaa7"/></svg>'), word: "りんご" },
             { imageData: 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="64" height="64"><rect width="16" height="16" fill="#74b9ff"/><rect x="4" y="4" width="8" height="8" fill="#55efc4"/></svg>'), word: "ごりら" },
@@ -1608,7 +1607,7 @@
 
             const payload = {
                 fileName: fileName,
-                imageData: canvasDataUrl,
+                image: canvasDataUrl,
                 status: "公開"
             };
 
@@ -1617,7 +1616,7 @@
                     method: 'POST',
                     mode: 'no-cors',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'text/plain;charset=utf-8',
                     },
                     body: JSON.stringify(payload)
                 });
@@ -1627,47 +1626,38 @@
             }
         }
 
-        // submitTurn 関数の全文（そのまま貼り付けてご使用いただけます）
-async function submitTurn() {
-    // ボタンの二重クリック防止やローディング表示があればここに追加
-    
-    // キャンバスから画像データを取得（例：data:image/png;base64,... 形式）
-    const canvasData = canvas.toDataURL('image/png'); 
-    
-    // ファイル名やステータスの取得（既存のロジックに合わせて調整してください）
-    const fileName = document.getElementById('fileNameInput')?.value || 'dot_art.png';
-    const status = "公開"; // 必要に応じて変更
+        async function submitTurn() {
+            const currentPlayerId = playOrder[activeOrderIndex];
+            const currentPlayer = players[currentPlayerId];
+            const imageData = canvas.toDataURL('image/png');
 
-    // GAS側が受け取るキー名 "image" に修正したペイロード
-    const payload = {
-        fileName: fileName,
-        image: canvasData, // ← "image" キーに変更済み
-        status: status
-    };
+            historyCards.push({
+                turn: currentTurn,
+                player: currentPlayer,
+                imageData: imageData,
+                status: 'pending',
+                scoreEarned: 0
+            });
 
-    try {
-        const response = await fetch(WEB_APP_URL, {
-            method: 'POST',
-            body: JSON.stringify(payload),
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8' // GASの doPost(e) で受け取るための一般的な設定
+            sendTurnDataToGAS(imageData);
+            renderHistoryCards();
+            playSound('turn');
+
+            currentTurn++;
+            activeOrderIndex = (activeOrderIndex + 1) % selectedPlayerCount;
+
+            if (currentTurn > maxTurns) {
+                stopTimer();
+                triggerGameFinishSequence();
+            } else {
+                updateTurnDisplays();
+                renderPlayerHeader();
+                clearCanvas();
+                startTimer();
+                showToast(`${currentPlayer.name}さんのターン終了！次のプレイヤーへ`);
             }
-        });
-
-        const result = await response.json();
-        
-        if (result.success || result.status === 'success') {
-            console.log('送信成功:', result);
-            alert('保存に成功しました！');
-        } else {
-            console.error('サーバーエラー:', result);
-            alert('保存に失敗しました。');
         }
-    } catch (error) {
-        console.error('通信エラー:', error);
-        alert('通信エラーが発生しました。');
-    }
-}
+
         function renderHistoryCards() {
             const container = document.getElementById('cards-history-list');
             if (!container) return;
