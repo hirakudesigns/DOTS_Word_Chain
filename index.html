@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -465,7 +464,7 @@
             </div>
 
             <div class="mt-5 inline-block arcade-subtitle-badge px-8 py-2.5 rounded-xl text-slate-900 font-black text-xs sm:text-base tracking-wide">
-                描いたドット絵をつないで、みんなで高得点を目指そう！
+                描いたドット絵をつないで、みんなで高得点を目指しよう！
             </div>
 
             <button onclick="goToSetupFromTitle()" class="pixel-btn-primary btn-start-action mt-8 px-10 py-4 rounded-2xl text-xl sm:text-2xl font-black tracking-widest cursor-pointer flex items-center justify-center gap-3">
@@ -484,7 +483,7 @@
             <h2 class="text-2xl font-black text-pink-500 text-center mb-1 flex items-center justify-center gap-2">
                 <i class="fa-solid fa-gear text-amber-400"></i> ゲーム設定
             </h2>
-            <p class="text-center text-xs text-slate-500 mb-5 font-bold">描いたドット絵をつないで、みんなで高得点を目指そう！</p>
+            <p class="text-center text-xs text-slate-500 mb-5 font-bold">描いたドット絵をつないで、みんなで高得点を目指しよう！</p>
 
             <!-- 1. Number of Players (2-4 players) -->
             <div class="mb-4">
@@ -729,7 +728,7 @@ async function fetchAndRenderGallery() {
             const response = await fetch(GAS_API_URL);
             const data = await response.json();
             
-            console.log("GASレスポンス:", data); // ← ブラウザのコンソールで中身を確認できます
+            console.log("GASレスポンス:", data);
 
             if (data.status === "success" && Array.isArray(data.images) && data.images.length > 0) {
                 window.cachedGalleryItems = data.images.map(item => ({
@@ -741,7 +740,6 @@ async function fetchAndRenderGallery() {
             console.error("スプレッドシートからのデータ取得に失敗しました:", err);
         }
     }
-    // 取得できてもできなくても、キャッシュ（またはフォールバック）を元に描画を実行
     loadTitleGallery();
 }
 
